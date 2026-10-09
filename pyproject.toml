@@ -7,11 +7,15 @@ requires-python = ">=3.11,<3.12"
 # Dependencies are added at the milestone that first uses them (see docs/CHANGELOG_REASONING.md, D-006).
 # Exact versions are pinned by uv.lock.
 dependencies = [
+    "arviz>=0.18",
+    "matplotlib>=3.9",
     "numpy>=1.26",
     "omegaconf>=2.3",
     "pandas>=2.2",
     "pyarrow>=16",
     "pydantic>=2.7",
+    "pymc>=5.16",
+    "scipy>=1.13",
     "typer>=0.12",
 ]
 
@@ -35,9 +39,10 @@ packages = ["src/youthtwin"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # human_gate tests fail by design until a human verifies something; run them with `make gate`.
-addopts = "--strict-markers -m 'not human_gate' --cov=youthtwin --cov-report=term-missing"
+addopts = "--strict-markers -m 'not human_gate and not slow' --cov=youthtwin --cov-report=term-missing"
 markers = [
     "human_gate: fails by design until a human completes a verification step (run with `make gate`)",
+    "slow: runs the MCMC sampler; excluded from `make test`, run with `make test-slow`",
 ]
 
 [tool.coverage.run]
@@ -60,3 +65,12 @@ select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF", "PTH"]
 python_version = "3.11"
 strict = true
 files = ["src"]
+
+[[tool.mypy.overrides]]
+# PyMC and PyTensor ship without type information.
+module = ["pymc.*", "pytensor.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["youthtwin.growth.sitar_bayes"]
+disallow_untyped_calls = false
