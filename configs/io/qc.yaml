@@ -1,0 +1,10 @@
+# Anthropometry QC limits. ASSUMPTIONS until the team fixes them in docs/protocol/01.
+# TODO(human): confirm duplicate-disagreement limits and plausible change limits.
+duplicate_limit:             # max |measure_1 - measure_2| before the pair is flagged
+  stature_cm: 0.5
+  sitting_height_cm: 0.7
+  mass_kg: 0.5
+sitting_to_stature_ratio: [0.45, 0.60]
+stature_decrease_tolerance_cm: 1.0   # visit-to-visit drop larger than this is flagged
+max_height_velocity_cm_per_year: 16.0
+min_days_between_visits_for_velocity: 21

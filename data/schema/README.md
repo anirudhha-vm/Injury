@@ -1,7 +1,8 @@
 # data/schema/
 
-Arrives in M1: SQL DDL, mirrored pydantic models (`src/youthtwin/io/schema.py`), and
-`docs/data_dictionary.md` documenting every field and unit.
+`schema.sql` is the DDL; `src/youthtwin/io/schema.py` holds the matching validation models;
+`docs/data_dictionary.md` documents every field and unit. `tests/test_schema.py` fails if the
+DDL and the models drift apart.
 
-Planned tables (brief §6.10): `athletes`, `anthropometrics`, `screening_sessions`, `trials`,
+Tables (brief §6.10): `athletes`, `anthropometrics`, `screening_sessions`, `trials`,
 `task_features`, `exposure_weekly`, `ostrc_weekly`, `injuries`, `growth_posteriors`.
