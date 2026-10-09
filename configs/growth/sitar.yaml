@@ -1,17 +1,37 @@
-# Bayesian SITAR-style growth twin (brief §6.2, contribution C1). Used from M2.
-# height_ij = alpha_i + h((age_ij - beta_i) * exp(gamma_i)); h = shared natural cubic spline.
+# Bayesian SITAR-style growth twin (brief §6.2, contribution C1).
+# stature_ij = intercept + alpha_i + h((age_ij - beta_i) * exp(gamma_i)); h = natural cubic spline.
+# Prior scales marked ASSUMPTION are weakly-informative choices, to be justified by prior
+# predictive checks before real data are fitted.
 spline:
-  n_interior_knots: 4        # ASSUMPTION - to be tuned on synthetic cohorts in M2
+  # Knot positions on the transformed age axis (years relative to beta_i). Denser near the
+  # growth spurt, where the curve bends. ASSUMPTION - revisit with real data.
+  knots_years: [-6.0, -3.0, -1.5, -0.5, 0.5, 1.5, 3.0, 5.0]
 timing_prior:
   centre: moore2015_aphv     # per-athlete prior mean for beta_i
-  sd_years: 1.0
-outcomes: [stature, sitting_height, mass]   # parallel models first, multivariate later
+  sd_years: 1.0              # brief default
+  learn_sd: false
+priors:                      # ASSUMPTION
+  curve_sd_cm: 30.0          # each orthogonal direction of the mean curve
+  size_sd_cm: 8.0
+  residual_sd_cm: 1.0
+intensity:                   # per-athlete growth-spurt intensity (gamma_i)
+  enabled: true
+  sd_prior: 0.15             # ASSUMPTION
+marginalisation:             # athlete timing and intensity are integrated out on these grids
+  timing_half_width_sd: 4.0  # grid spans the timing prior +/- this many SDs
+  timing_points: 61          # spacing 0.133 SD; finer grids changed the log-likelihood by < 0.1
+  intensity_half_width_sd: 3.0
+  intensity_points: 5
+outcomes: [stature]          # sitting_height and mass follow once stature is validated
 inference:
   method: nuts               # nuts | advi (fallback for speed)
-  draws: 1000
-  tune: 1000
+  draws: 750
+  tune: 750
   chains: 4
+  cores: 4
   target_accept: 0.9
+  init: adapt_diag           # no jitter: all chains start from the least-squares mean curve
+  advi_iterations: 30000
 growth_state:
   n_posterior_draws: 200     # S draws propagated to the risk model
   forecast_horizon_days: 90
