@@ -173,6 +173,8 @@ flag; a column survives joins and exports where file-level metadata does not.
   pairs breached the QC limit, which would have made the QC output useless as a test bed.
 - Both are tuning of assumptions for plausibility, not calibration to data.
 
-### Not done
-- GitHub push: the remote `origin` is configured, but this machine could not reach github.com
-  (IPv4 link down; GitHub has no IPv6 address). CI therefore still has not run.
+### Repository and CI
+- Pushed to `github.com/anirudhha-vm/Injury` (branch `main`). The fetch URL is HTTPS as given;
+  the push URL is SSH because the machine has an SSH key for the account but no HTTPS credential.
+- CI ran for the first time on commit `508d555` and passed. The human-gates job is allowed to
+  fail, so a green run does **not** mean the Mirwald coefficients are verified.
