@@ -178,3 +178,95 @@ flag; a column survives joins and exports where file-level metadata does not.
   the push URL is SSH because the machine has an SSH key for the account but no HTTPS credential.
 - CI ran for the first time on commit `508d555` and passed. The human-gates job is allowed to
   fail, so a green run does **not** mean the Mirwald coefficients are verified.
+
+---
+
+## M2 — Bayesian growth twin (2026-10-09)
+
+### What was tried, in order, and why each step was abandoned or kept
+
+**D-024 · First attempt: sample every athlete's size, timing and intensity directly with NUTS. Abandoned.**
+On an 80-athlete synthetic cohort the chains did not agree (R-hat about 2.9, effective sample
+size about 5, maximum tree depth reached). Coverage numbers from that run are meaningless and
+are not recorded.
+
+**D-025 · Orthogonalised mean-curve parameters. Kept.**
+The truncated-power spline basis is strongly collinear. The curve is now parameterised through
+a QR decomposition of the basis on a grid (`splines.orthogonalising_transform`), so each sampled
+parameter moves the curve in an independent direction. This removed divergences and cut run
+time, but R-hat stayed near 1.6.
+
+**D-026 · Size sampled as "fitted stature at the athlete's mean age". Superseded by D-028.**
+Addressed the narrow ridge between size and timing (tall for age vs early maturer). Faster, but
+chains still disagreed.
+
+**D-027 · Diagnosis: athlete timing is genuinely two-peaked with one season of data.**
+Chain-by-chain inspection showed individual athletes whose timing sat at two values about two
+years apart in different chains (e.g. 13.0 vs 15.5). A given growth speed fits either the
+rising or the falling side of the growth spurt. Removing the intensity effect made this worse,
+not better (about half the athletes affected), so intensity is not the cause. A gradient-based
+sampler cannot move between such peaks, and one stuck athlete shifts the shared curve for
+everyone. This is a property of the data design (short follow-up), not a coding error, and is
+worth a paragraph in the paper.
+
+**D-028 · Marginalised model. Kept; this is the M2 design.**
+- Size is integrated out in closed form (linear-Gaussian).
+- Timing and intensity are integrated out on a fixed grid.
+- NUTS samples only the shared curve and SDs (about a dozen parameters).
+- Athlete effects are then drawn exactly, per shared draw, from the grid posterior, so
+  two-peaked timing is reported as two-peaked rather than collapsed.
+Verified by unit tests: each grid cell equals an independently computed multivariate normal
+density; NumPy and PyTensor versions agree; with the true shared curve, 90% intervals for timing
+and size cover the truth at the stated rate; a constructed two-sided case yields both peaks.
+
+**D-029 · Incremental update = redraw athlete effects against stored shared draws.**
+A consequence of D-028: no sampler is needed when an athlete gets a new measurement. It is
+exact given the shared draws and approximate only in not re-estimating the shared curve, which
+should be refit periodically. This replaces the brief's "refit, warm-started".
+
+**D-030 · Age at PHV is computed from the fitted curve, not read from the timing parameter.**
+Nothing forces the spline's velocity peak to sit at zero on the transformed age axis, so
+`beta_i` alone is not APHV. APHV per draw is `beta_i + z_peak * exp(-gamma_i)`, matching how the
+synthetic truth is defined.
+
+**D-031 · Chains start from a least-squares mean curve, without jitter.**
+With every athlete at their Moore prior the model is linear in the curve parameters. Starting
+from a flat curve let chains settle on different shapes.
+
+**D-032 · Stature only in M2.**
+Leg-length and mass velocity (listed in the brief's growth state) need sitting-height and mass
+models. They reuse this code path and are deferred until the stature model is validated.
+
+**D-033 · Sampler tests are marked `slow` and excluded from `make test`.**
+Unit tests cover the likelihood and the exact athlete draws without running MCMC. `make
+test-slow` runs a small end-to-end fit. Acceptance numbers come only from
+`scripts/sim_study_growth.py`.
+
+### Research note
+**R-003 ·** The R package `bsitar` implements a Bayesian SITAR (natural cubic spline mean curve
+with size, timing and intensity random effects, sampled directly). It is designed for
+longitudinal series spanning the growth spurt; our one-season design is what makes direct
+sampling fail here.
+
+### Outcome of the simulation study (SYNTHETIC, run `simgrowth-db8d25ba9b6f`)
+- Sampler converged for both sexes (R-hat at most 1.01, no divergences). About 40 minutes
+  wall-clock with both sexes fitted in parallel.
+- Error criterion met: APHV mean absolute error 0.43 y against 0.72 y for the Moore estimate.
+- **Coverage criterion not met: 74% against a target of 85-95%.** Intervals are shifted early
+  and too narrow. Details, a breakdown by distance from PHV, and untested hypotheses are in
+  `docs/plans/M2_done.md`. The acceptance range in `configs/growth/sitar.yaml` was left as
+  specified; it was not relaxed to fit the result.
+
+**D-034 · The integration grid was coarsened from 161 x 9 to 61 x 5 points.**
+One gradient evaluation cost 55 ms on the fine grid, which made a fit take hours. Coarser grids
+changed the log-likelihood at the starting point by less than 0.1, and the gradient cost fell
+to about 12 ms. Accuracy near the posterior mode has not been checked separately.
+
+**D-035 · The run recorded a `-dirty` commit.**
+The study was run before the M2 code was committed. Provenance therefore does not point at a
+reproducible commit; re-run `make sim-study-growth` from a clean tree before quoting numbers.
+
+**Fix during M2 ·** A scripted multi-step edit of `scripts/sim_study_growth.py` matched text
+inside a function it had just inserted and deleted two function bodies. One background run
+exited immediately as a result. The script was rewritten whole; lint would have caught it had
+it been run before launching.

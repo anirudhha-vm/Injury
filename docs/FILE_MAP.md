@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-09 (M1).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-09 (M2).
 
 ## Root
 
@@ -14,7 +14,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `README.md` | Entry point: status, quick start, pointers | ✅ |
 | `pyproject.toml` | Package metadata, dependencies, and ruff / mypy / pytest / coverage settings | ✅ |
 | `uv.lock` | Exact pinned versions of every dependency | ✅ |
-| `Makefile` | The only commands people need: `setup`, `test`, `lint`, `gate`, `todo`, `sim`; later `pipeline`, `paper-figs` | ✅ |
+| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`; later `pipeline`, `paper-figs` | ✅ |
 | `.pre-commit-config.yaml` | Blocks video files, `.env` files, and Supabase secret keys from being committed; runs ruff and the paper results guard | ✅ |
 | `.github/workflows/ci.yml` | CI: lint + tests (blocking), tracked-video check, human gates (visible, non-blocking) | ✅ |
 | `.gitignore` | Keeps raw video, data, secrets, and run outputs out of git | ✅ |
@@ -26,7 +26,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | File | Responsible for | Status |
 |---|---|---|
 | `growth/equations.yaml` | Moore-2015 and Mirwald-2002 coefficients, input plausibility ranges, and the `mirwald_girls_verified` human gate | ✅ |
-| `growth/sitar.yaml` | Bayesian growth-twin settings: spline knots, timing prior, sampler, posterior draws, coverage acceptance range | ✅ (used M2) |
+| `growth/sitar.yaml` | Growth-twin settings: knots, timing prior, prior scales, integration grids, sampler, number of draws kept, coverage acceptance range | ✅ |
 | `pose/skeleton.yaml` | BlazePose landmark indices | ✅ (used M3) |
 | `pose/estimator.yaml` | Which pose estimator and model variant; fps requirements | ✅ (used M3) |
 | `pose/filter.yaml` | Gap filling, Butterworth order/cutoff, velocity units | ✅ (used M3) |
@@ -50,12 +50,15 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `utils/results_guard.py` | Detecting untagged numbers in `paper/` and generated figures/tables without provenance | ✅ |
 | `utils/seeding.py` | Independent, reproducible random streams from one master seed | ✅ |
 | `utils/provenance.py` | Run metadata: seed, config hash, git commit, synthetic flag | ✅ |
+| `utils/plotting.py` | SYNTHETIC watermark and figure saving with a provenance sidecar | ✅ |
 | `utils/logging.py` | Run logging | 🔲 (when first needed) |
 | `growth/verification.py` | Human-verification gate: real-data runs raise, synthetic runs warn, while a coefficient set is unverified | ✅ |
 | `growth/maturity_equations.py` | Moore-2015 and Mirwald-2002 maturity offset and predicted age at PHV; rejects implausible inputs; Mirwald girls gated | ✅ |
+| `growth/splines.py` | Natural cubic spline basis and derivative, usable on NumPy arrays and PyTensor variables; orthogonalising transform for sampling | ✅ |
+| `growth/evaluation.py` | Scores posterior APHV against a known truth: coverage, errors, bias, by group | ✅ |
 | `growth/khamis_roche.py` | % predicted adult height; raises `NotImplementedError` until a human supplies the coefficient table | ✅ (placeholder) |
-| `growth/sitar_bayes.py` | Hierarchical Bayesian SITAR growth model (C1) | 🔲 (M2) |
-| `growth/growth_state.py` | Posterior → per-date growth state with uncertainty and 3-month forecast | 🔲 (M2) |
+| `growth/sitar_bayes.py` | Hierarchical growth model: data preparation, marginal likelihood (athlete effects integrated out), NUTS over the shared curve, exact athlete-effect draws, incremental update, diagnostics | ✅ (coverage criterion not met — see `docs/plans/M2_done.md`) |
+| `growth/growth_state.py` | `SitarPosterior` (saved draws, plain NumPy) and `GrowthState`: age at PHV, maturity offset, height velocity, % of peak velocity, 90-day forecast, each with mean, SD and draws | ✅ (stature only) |
 | `io/schema.py` | Row models for the nine tables: types, units, ranges, privacy rules (month-only DOB, no video paths) | ✅ |
 | `io/ingest.py` | Validates tables row by row and loads them into SQLite; all-or-nothing; refuses to mix synthetic and real rows | ✅ |
 | `io/qc.py` | Technical error of measurement and anthropometry flags; never edits or drops data | ✅ |
@@ -81,7 +84,9 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 |---|---|---|
 | `check_no_hardcoded_results.py` | Thin CLI over `utils/results_guard.py`; run by `make lint`, pre-commit, CI | ✅ |
 | `make_synthetic_cohort.py` | Generates, validates and writes the synthetic cohort (`make sim`) | ✅ |
-| `sample_size.py`, `fit_growth.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
+| `fit_growth.py` | Fits the growth twin to a cohort directory, or updates existing posteriors with new measurements | ✅ |
+| `sim_study_growth.py` | Growth-twin simulation study on the synthetic cohort: coverage and error vs truth and vs Moore; writes scores, summary, posteriors, watermarked figure to `outputs/` (`make sim-study-growth`) | ✅ |
+| `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
 
 ## `tests/`
 
@@ -99,6 +104,9 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_cohort.py` | Non-reproducible cohorts; unlabelled synthetic data; truth leaking into observable tables | ✅ |
 | `test_schema.py` | DDL and models drifting apart; full DOB, non-UUID IDs, video paths, undiagnosed injuries | ✅ |
 | `test_ingest_qc_deid.py` | Silent row drops; partial loads; synthetic/real mixing; QC editing data; identity map inside the repo | ✅ |
+| `test_splines.py` | A spline that is not smooth, not linear in the tails, or differs between NumPy and PyTensor | ✅ |
+| `test_growth_state.py` | APHV not at the velocity peak; uncertainty not carried into the state; scoring errors | ✅ |
+| `test_sitar_bayes.py` | Wrong marginal likelihood; mis-calibrated or single-peaked athlete draws; update not using new data; unwatermarked synthetic figures. One `slow` end-to-end fit | ✅ |
 | v2 regression tests listed in brief §3 (angle conventions, FPPA, filtering, scaler scope, leakage, …) | The specific v2 defects | 🔲 (M1–M7) |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
@@ -108,7 +116,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0, M1 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0, M1, M2 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |

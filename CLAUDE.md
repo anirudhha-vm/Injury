@@ -16,6 +16,8 @@ Current milestone status: see `docs/plans/` (`Mx.md` = plan, `Mx_done.md` = comp
 | `make gate` | human-verification gates — **fails by design** until each `TODO(human)` is resolved |
 | `make todo` | list every `TODO(human)` |
 | `make sim` | generate the synthetic cohort into `data/synthetic/` |
+| `make test-slow` | tests that run the MCMC sampler |
+| `make sim-study-growth` | growth-twin simulation study on synthetic data (about 40 minutes) |
 | `make pipeline` / `make paper-figs` | arrive in M6 / M7 |
 
 Run `make test lint` before every commit.
