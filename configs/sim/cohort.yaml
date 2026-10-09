@@ -1,19 +1,98 @@
-# Synthetic cohort generator (brief §6.8). Used from M1. Every output carries synthetic=True.
+# Synthetic cohort generator (brief §6.8). Every output carries synthetic=True.
+#
+# IMPORTANT: every numeric value below is an ASSUMPTION chosen to give plausible-looking data
+# for pipeline development. None is an estimate from our cohort, and none has been checked
+# against a source. TODO(human): before the simulation study is written up, replace or cite
+# each block (growth parameters, measurement error, hazards).
 synthetic: true
 seed: 20261009
 n_athletes: 300
-follow_up_months: 12
-age_range_years: [8.0, 18.0]
-growth_model: preece_baines_1
-aphv_years:                  # ASSUMPTION from the brief ("literature-plausible"); cite or revise in M1
-  girls: {mean: 12.0, sd: 1.0}
-  boys: {mean: 14.0, sd: 1.0}
+follow_up_weeks: 52
+start_date: "2026-01-05"       # a Monday; week_start dates are Mondays
+baseline_age_years: [8.0, 17.0]  # so every athlete stays within 8-18 y during follow-up
+proportion_female: 0.5
+sports: [cricket, football, athletics]   # placeholder labels; TODO(human): real sports
+n_academies: 3
+proportion_right_dominant: 0.9
+
+growth:
+  model: preece_baines_1   # h(t) = h1 - 2(h1 - h_theta) / (exp(s0(t-theta)) + exp(s1(t-theta)))
+  aphv_years:              # target distribution of TRUE age at PHV (from the brief)
+    female: {mean: 12.0, sd: 1.0}
+    male: {mean: 14.0, sd: 1.0}
+  adult_height_cm:         # h1
+    female: {mean: 160.0, sd: 6.0}
+    male: {mean: 173.0, sd: 6.5}
+  height_gain_after_theta_cm:   # h1 - h_theta
+    female: {mean: 10.5, sd: 1.0}
+    male: {mean: 12.0, sd: 1.0}
+  s0:                      # pre-pubertal rate constant (lognormal: median, sigma of log)
+    female: {median: 0.13, sigma_log: 0.05}
+    male: {median: 0.11, sigma_log: 0.05}
+  s1:                      # pubertal rate constant
+    female: {median: 1.18, sigma_log: 0.10}
+    male: {median: 1.24, sigma_log: 0.10}
+  sitting_ratio:           # sitting height / stature as a function of true maturity offset u
+    adult: {mean: 0.515, sd: 0.008}
+    child_excess: 0.030    # legs relatively short in childhood
+    child_centre_years: -1.0
+    child_width_years: 1.2
+    late_trunk_gain: 0.008 # trunk keeps growing after the legs
+    late_centre_years: 0.5
+    late_width_years: 0.8
+  bmi:
+    at_age_8: 15.5
+    slope_per_year: 0.5
+    maturity_gain: 0.5
+    between_athlete_sd: 1.5
+  mid_parent_height_noise_sd_cm: 4.0
+  mid_parent_sex_adjustment_cm: 6.5   # mid-parent height = adult height -/+ this for boys/girls
+
 visits:
-  interval_weeks: [6, 8]
-  missed_visit_probability: 0.1   # ASSUMPTION
-measurement_error:
-  duplicate_measures: true
-  tem: null                  # TODO(M1): set technical error of measurement from cited literature
-injury_dgp:                  # known data-generating process; effect sizes set in M1
-  growth_related: leg_length_velocity x knee_extensor_load_proxy
-  soft_tissue: post_phv + exposure_spikes
+  interval_days: [42, 56]        # every 6-8 weeks
+  first_visit_within_days: 14
+  missed_visit_probability: 0.1
+
+measurement_error:               # SD of a single measurement
+  stature_cm: 0.2
+  sitting_height_cm: 0.3
+  mass_kg: 0.1
+n_measurers: 4
+
+movement:                        # per-session screening summary features
+  trait_sd: 1.0                  # stable per-athlete trait (standardised units)
+  session_noise_sd: 0.5
+  maturity_shift: 0.3            # shift per unit of sigmoid(true maturity offset)
+  features:
+    knee_extensor_load_proxy: {mean: 0.0, scale: 1.0}        # standardised
+    landing_peak_knee_flexion_deg: {mean: 75.0, scale: 10.0}
+    knee_fppa_ic_deg: {mean: 5.0, scale: 6.0}
+
+exposure:
+  training_hours:
+    at_age_8: 4.0
+    slope_per_year: 0.6
+    gamma_shape: 8.0
+  match_hours_fraction: 0.2
+  spike_probability: 0.08
+  spike_multiplier: 1.8
+  hours_per_session: 1.5
+
+injury:                          # KNOWN data-generating process: logit of weekly hazard
+  standardisation:
+    leg_length_velocity_cm_per_year: {centre: 3.0, scale: 2.0}
+    weekly_hours: {centre: 8.0, scale: 4.0}
+  growth_related:
+    intercept: -5.6
+    leg_length_velocity: 0.6
+    load_proxy: 0.4
+    velocity_x_load: 0.3
+    hours: 0.2
+  non_contact_soft_tissue:
+    intercept: -5.9
+    post_phv: 0.9                # multiplies sigmoid(2 * true maturity offset)
+    exposure_spike: 0.8
+    hours: 0.2
+  other_non_contact:
+    intercept: -6.5
+  time_loss_days: {median: 14.0, sigma_log: 0.8}

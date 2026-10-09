@@ -22,8 +22,8 @@ gate:  ## human-verification gates; FAILS BY DESIGN until each TODO(human) is re
 todo:  ## list everything waiting on a human decision
 	@grep -rn "TODO(human)" --include="*" --exclude-dir=.git --exclude-dir=.venv . || true
 
-sim:  ## generate the synthetic cohort (M1)
-	@echo "make sim: not implemented until milestone M1"; exit 1
+sim:  ## generate the synthetic cohort into data/synthetic/ (flagged synthetic=True)
+	uv run python scripts/make_synthetic_cohort.py
 
 pipeline:  ## end-to-end pipeline on synthetic data (M5-M6)
 	@echo "make pipeline: not implemented until milestone M6"; exit 1
