@@ -1,0 +1,19 @@
+# Synthetic cohort generator (brief §6.8). Used from M1. Every output carries synthetic=True.
+synthetic: true
+seed: 20261009
+n_athletes: 300
+follow_up_months: 12
+age_range_years: [8.0, 18.0]
+growth_model: preece_baines_1
+aphv_years:                  # ASSUMPTION from the brief ("literature-plausible"); cite or revise in M1
+  girls: {mean: 12.0, sd: 1.0}
+  boys: {mean: 14.0, sd: 1.0}
+visits:
+  interval_weeks: [6, 8]
+  missed_visit_probability: 0.1   # ASSUMPTION
+measurement_error:
+  duplicate_measures: true
+  tem: null                  # TODO(M1): set technical error of measurement from cited literature
+injury_dgp:                  # known data-generating process; effect sizes set in M1
+  growth_related: leg_length_velocity x knee_extensor_load_proxy
+  soft_tissue: post_phv + exposure_spikes

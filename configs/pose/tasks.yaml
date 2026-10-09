@@ -1,0 +1,19 @@
+# Screening tasks (brief §5). Two phones: frontal + sagittal. Task list is config-driven.
+cameras: [frontal, sagittal]
+tasks:
+  drop_vertical_jump:
+    bilateral: true
+    trials: 3
+    events: [box_drop, initial_contact, peak_knee_flexion, take_off, second_landing]
+  single_leg_squat:
+    bilateral: false
+    trials_per_limb: 3
+    events: [start, deepest_point, return]
+  tuck_jump:
+    bilateral: true
+    duration_s: 10
+    events: []               # TODO(M3): define repeated-contact events
+  single_leg_hop_distance:
+    bilateral: false
+    trials_per_limb: 3
+    events: [take_off, landing]

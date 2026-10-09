@@ -1,0 +1,11 @@
+# Keypoint filtering (brief §6.3; v2 defect: unfiltered deg/frame velocities). Used from M3.
+gap_fill:
+  min_confidence: 0.5        # ASSUMPTION - revisit with real clips
+  max_linear_gap_frames: 5   # longer gaps stay NaN
+butterworth:
+  order: 4                   # effective order after zero-lag (forward-backward) filtering
+  zero_lag: true
+  cutoff_hz: 8.0             # configurable; justify with residual analysis
+  cutoff_range_hz: [6.0, 12.0]
+velocity:
+  units: deg_per_s           # from true container timestamps, never per-frame

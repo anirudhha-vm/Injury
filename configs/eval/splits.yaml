@@ -1,0 +1,14 @@
+# Split definitions (non-negotiable N3). Used from M5.
+group_key: athlete_id        # no athlete in both train and test; windows never cross folds
+outer:
+  scheme: stratified_group_kfold
+  n_splits: 5
+  stratify_by: event_status
+inner:                       # nested, for tuning
+  scheme: stratified_group_kfold
+  n_splits: 3
+temporal_holdout:
+  fraction_of_follow_up: 0.25   # last ~25% of follow-up time
+leave_one_academy_out:
+  enabled_if_n_academies_at_least: 3
+scalers: fit_on_train_fold_only   # non-negotiable N4

@@ -1,0 +1,21 @@
+# Discrete-time cause-specific hazard models (contribution C3). Used from M5-M6.
+time_unit: athlete_week
+prediction_horizon_weeks: 4
+outcome_groups: [growth_related, non_contact_soft_tissue, all_non_contact]   # N6: modelled separately
+primary_outcome: growth_related
+risk_set:
+  exclude_while_injured: true
+screening_carry_forward: locf_with_weeks_since_screen
+exposure:
+  ewma: true
+  acwr_as_primary: false
+class_imbalance:
+  smote: false               # never on person-period data
+models:
+  hazard_logit: {penalty: elastic_net, continuous_terms: natural_splines}
+  hazard_xgb: {monotone_constraints: optional}
+  hazard_neural: {head: small_mlp, film: optional}
+uncertainty:
+  posterior_draw_propagation: true
+  deep_ensemble_seeds: 5
+  split_conformal: optional

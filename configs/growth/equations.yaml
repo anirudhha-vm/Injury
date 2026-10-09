@@ -1,0 +1,42 @@
+# Maturity-offset equations (brief §2.1). Coefficients live here, not in code (rule 10).
+# Units: age in decimal years; stature, sitting_height, leg_length in cm; mass in kg.
+# leg_length = stature - sitting_height. MO = years from PHV; APHV = age - MO.
+# Source of every value below: docs/PROJECT_BRIEF.md §2.1 (transcribed, NOT yet checked against PDFs).
+
+# --- Human verification gates (only a human sets these to true; see `make gate`) ---
+# TODO(human): verify Mirwald girls coefficients against Mirwald et al. (2002) MSSE 34(4):689-694.
+mirwald_girls_verified: false
+
+primary_family: moore2015
+secondary_family: mirwald2002
+
+plausibility:  # inputs outside these ranges raise
+  age_years: [7.0, 20.0]
+  stature_cm: [90.0, 210.0]
+  sitting_to_stature_ratio: [0.45, 0.60]
+
+moore2015:
+  boys:  # MO = intercept + b * (age * sitting_height)
+    intercept: -8.128741
+    age_x_sitting_height: 0.0070346
+  girls:  # MO = intercept + b * (age * stature)
+    intercept: -7.709133
+    age_x_stature: 0.0042232
+  boys_stature:  # sensitivity analysis only: MO = intercept + b * (age * stature)
+    intercept: -7.999994
+    age_x_stature: 0.0036124
+
+mirwald2002:
+  boys:
+    intercept: -9.236
+    leg_length_x_sitting_height: 0.0002708
+    age_x_leg_length: -0.001663
+    age_x_sitting_height: 0.007216
+    mass_over_stature_x100: 0.02292
+  girls:  # UNVERIFIED - gated by mirwald_girls_verified
+    intercept: -9.376
+    leg_length_x_sitting_height: 0.0001882
+    age_x_leg_length: 0.0022
+    age_x_sitting_height: 0.005841
+    age_x_mass: -0.002658
+    mass_over_stature_x100: 0.07693

@@ -1,0 +1,20 @@
+# Bayesian SITAR-style growth twin (brief §6.2, contribution C1). Used from M2.
+# height_ij = alpha_i + h((age_ij - beta_i) * exp(gamma_i)); h = shared natural cubic spline.
+spline:
+  n_interior_knots: 4        # ASSUMPTION - to be tuned on synthetic cohorts in M2
+timing_prior:
+  centre: moore2015_aphv     # per-athlete prior mean for beta_i
+  sd_years: 1.0
+outcomes: [stature, sitting_height, mass]   # parallel models first, multivariate later
+inference:
+  method: nuts               # nuts | advi (fallback for speed)
+  draws: 1000
+  tune: 1000
+  chains: 4
+  target_accept: 0.9
+growth_state:
+  n_posterior_draws: 200     # S draws propagated to the risk model
+  forecast_horizon_days: 90
+acceptance:                  # M2 acceptance criteria on synthetic cohorts
+  interval_level: 0.90
+  coverage_range: [0.85, 0.95]

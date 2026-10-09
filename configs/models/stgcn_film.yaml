@@ -1,0 +1,7 @@
+# ST-GCN encoder variant on the joint graph (contribution C2). Used from M6.
+backbone: stgcn
+graph: blazepose_lower_body_and_trunk
+conditioning: film           # none | concat_input | late_fusion | film
+sequence_length: 101
+normalisation: train_fold_only   # non-negotiable N4
+early_stopping: grouped_validation_folds

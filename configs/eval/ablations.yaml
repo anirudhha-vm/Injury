@@ -1,0 +1,12 @@
+# Pre-registered ablation grid (brief §6.7). Run by scripts/ablation.py (M6-M7).
+# Results come only from runs; this file must never contain an expected value.
+ablations:
+  - {id: 1, name: age_only}
+  - {id: 2, name: maturity_offset_plus_growth_velocity}
+  - {id: 3, name: screening_features_only}
+  - {id: 4, name: movement_encoder_only, conditioning: none}
+  - {id: 5, name: late_fusion, conditioning: late_fusion}
+  - {id: 6, name: concat_v2_design, conditioning: concat_input}
+  - {id: 7, name: film_proposed, conditioning: film}
+  - {id: 8, name: film_plus_mech_proxies, conditioning: film, mech_proxies: true}
+  - {id: 9, name: film_mech_uncertainty, conditioning: film, mech_proxies: true, propagate_uncertainty: true}

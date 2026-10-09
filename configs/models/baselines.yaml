@@ -1,0 +1,11 @@
+# Baseline risk models (brief §6.6). All cause-specific. Used from M5.
+baselines:
+  age_only:
+    model: logistic
+    predictors: [age]
+  maturity_growth_velocity:  # clinical baseline
+    model: logistic
+    predictors: [maturity_offset, height_velocity, leg_length_velocity, mass_velocity]
+  screening_only:
+    model: logistic
+    predictors: screening_task_features

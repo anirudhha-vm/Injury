@@ -1,0 +1,35 @@
+repos:
+  - repo: local
+    hooks:
+      - id: block-raw-video
+        name: Block raw video files (privacy rule 7)
+        entry: Raw video must never be committed. Keep it in data/raw_video_LOCAL_ONLY/ (git-ignored).
+        language: fail
+        files: '(?i)\.(mp4|mov|avi|mkv|m4v|webm)$'
+      - id: block-env-files
+        name: Block .env files
+        entry: .env files hold secrets and must never be committed.
+        language: fail
+        files: '(^|/)\.env(\..*)?$'
+        exclude: '(^|/)\.env\.example$'
+      - id: block-secret-keys
+        name: Block Supabase secret keys
+        entry: 'sb_secret_[A-Za-z0-9_-]{8,}'
+        language: pygrep
+        types: [text]
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format --check
+        entry: uv run ruff format --check --force-exclude
+        language: system
+        types: [python]
+      - id: no-hardcoded-results
+        name: No untagged numbers in paper/ (rule 4)
+        entry: uv run python scripts/check_no_hardcoded_results.py
+        language: system
+        pass_filenames: false
+        files: '^paper/'

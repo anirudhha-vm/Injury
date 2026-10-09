@@ -1,0 +1,15 @@
+# Per-trial and per-session kinematic features (brief §6.3). Used from M3.
+angles:
+  sagittal: [knee_flexion, hip_flexion, ankle_dorsiflexion]         # side camera
+  frontal: [knee_fppa, pelvic_drop, trunk_lateral_lean]             # frontal camera
+  ratios: [knee_to_ankle_separation]
+conventions:
+  knee_flexion: "180 - included hip-knee-ankle angle; 0 deg = full extension"   # v2 defect fix
+per_trial: [value_at_event, range_of_motion, peak_angular_velocity]
+curve_points: 101            # time-normalised landing curves for SPM
+asymmetry:
+  scope: events_only         # never frame-wise in non-bilateral tasks (v2 defect)
+  index: lsi                 # lsi | symmetry_angle
+quality:
+  min_trial_quality: 0.6     # ASSUMPTION; excluded trials are logged, never silently dropped
+output_columns: [athlete_id, session_id, task, trial, limb, feature, value, quality]

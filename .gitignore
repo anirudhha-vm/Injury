@@ -1,0 +1,46 @@
+# --- Privacy (rule 7): raw video of minors never enters the repo ---
+data/raw_video_LOCAL_ONLY/*
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.m4v
+*.webm
+*.MP4
+*.MOV
+
+# --- Data: only README, schema and .gitkeep are tracked ---
+data/keypoints/*
+data/interim/*
+data/processed/*
+data/synthetic/*
+!data/**/.gitkeep
+
+# --- Identity map and secrets live outside the repo ---
+.env
+.env.*
+!.env.example
+*identity_map*
+*.pem
+*.key
+
+# --- Python / tooling ---
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- Run outputs ---
+outputs/
+multirun/
+runs/
+*.nc
+.ipynb_checkpoints/
+.DS_Store

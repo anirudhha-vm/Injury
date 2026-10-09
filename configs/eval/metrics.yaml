@@ -1,0 +1,19 @@
+# Evaluation metrics (brief §6.7). Used from M7.
+primary_metric: time_dependent_auc_4wk
+metrics:
+  - time_dependent_auc_4wk
+  - brier_score
+  - calibration_intercept
+  - calibration_slope
+  - ici
+  - ece
+  - pr_auc
+  - sensitivity_specificity_at_thresholds
+thresholds: null             # TODO(human): pre-specify risk thresholds in paper/preregistration.md
+decision_curve:
+  references: [treat_all, treat_none]
+bootstrap:
+  unit: athlete              # cluster bootstrap
+  n_resamples: 1000
+  ci_level: 0.95
+subgroups: [sex, maturity_stratum, sport, age_band]

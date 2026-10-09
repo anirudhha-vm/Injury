@@ -1,0 +1,17 @@
+# Landmark indices - mirrored by src/youthtwin/pose/skeletons.py (M3), the single source of truth.
+# v2 defect: knee used 11/13/15 (shoulder/elbow/wrist). Guarded by tests/test_configs.py.
+blazepose:  # MediaPipe BlazePose, 33 landmarks
+  n_landmarks: 33
+  landmarks:
+    left_shoulder: 11
+    right_shoulder: 12
+    left_hip: 23
+    right_hip: 24
+    left_knee: 25
+    right_knee: 26
+    left_ankle: 27
+    right_ankle: 28
+    left_heel: 29
+    right_heel: 30
+    left_foot_index: 31
+    right_foot_index: 32

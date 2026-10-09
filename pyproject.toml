@@ -1,0 +1,57 @@
+[project]
+name = "youthtwin"
+version = "0.0.1"
+description = "Uncertainty-aware, maturity-conditioned digital twin for growth-related injury prediction in youth athletes (research code)"
+readme = "README.md"
+requires-python = ">=3.11,<3.12"
+# Dependencies are added at the milestone that first uses them (see docs/CHANGELOG_REASONING.md, D-006).
+# Exact versions are pinned by uv.lock.
+dependencies = [
+    "omegaconf>=2.3",
+    "typer>=0.12",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.11",
+    "pre-commit>=3.8",
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/youthtwin"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# human_gate tests fail by design until a human verifies something; run them with `make gate`.
+addopts = "--strict-markers -m 'not human_gate' --cov=youthtwin --cov-report=term-missing"
+markers = [
+    "human_gate: fails by design until a human completes a verification step (run with `make gate`)",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["youthtwin"]
+
+[tool.coverage.report]
+fail_under = 85
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF", "PTH"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["src"]

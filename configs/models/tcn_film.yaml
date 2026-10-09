@@ -1,0 +1,10 @@
+# Temporal CNN encoder with FiLM conditioning (contribution C2). Used from M6.
+backbone: tcn
+max_params: 200000
+conditioning: film           # none | concat_input | late_fusion | film  (primary ablation)
+film:
+  placement: after_each_residual_block
+  input: growth_state_means_and_sds_standardised
+sequence_length: 101
+normalisation: train_fold_only   # non-negotiable N4
+early_stopping: grouped_validation_folds

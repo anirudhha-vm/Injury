@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Block tracked video files
+        run: |
+          if git ls-files | grep -iE '\.(mp4|mov|avi|mkv|m4v|webm)$'; then
+            echo "Raw video is tracked by git - remove it."; exit 1
+          fi
+      - run: make lint
+      - run: make test
+
+  human-gates:
+    # Fails by design until every human verification is done; visible but non-blocking.
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --locked
+      - run: make gate

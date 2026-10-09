@@ -1,0 +1,9 @@
+# Mechanistic apophyseal load PROXIES (contribution C4). Used from M5.
+# These are proxies, not validated against force plates - label them as such everywhere.
+validated_against_force_plates: false
+proxies:
+  patellar_tendon_traction:    # Osgood-Schlatter / SLJ mechanism
+    definition: knee_extensor_moment_proxy / (patellar_tendon_moment_arm scaled by segment length)
+  achilles_calcaneal_traction: # Sever's mechanism
+    definition: ankle_plantarflexor_moment_proxy / (achilles_moment_arm scaled by segment length)
+# TODO(M5): moment-arm scaling coefficients must come from cited literature, not invented.
