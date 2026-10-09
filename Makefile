@@ -1,4 +1,4 @@
-.PHONY: setup test lint gate sim pipeline paper-figs todo
+.PHONY: setup test test-slow lint gate sim sim-study-growth pipeline paper-figs todo
 
 # A system PYTHONPATH (e.g. from a ROS install) leaks foreign pytest plugins into the venv.
 unexport PYTHONPATH
@@ -9,6 +9,9 @@ setup:  ## install pinned environment + git hooks
 
 test:  ## unit/integration tests (excludes human_gate tests)
 	uv run pytest
+
+test-slow:  ## tests that run the MCMC sampler (minutes)
+	uv run pytest -m slow --no-cov
 
 lint:  ## ruff + mypy --strict + paper/ results guard
 	uv run ruff check .
@@ -24,6 +27,9 @@ todo:  ## list everything waiting on a human decision
 
 sim:  ## generate the synthetic cohort into data/synthetic/ (flagged synthetic=True)
 	uv run python scripts/make_synthetic_cohort.py
+
+sim-study-growth:  ## simulation study for the growth twin (SYNTHETIC; tens of minutes)
+	uv run python scripts/sim_study_growth.py
 
 pipeline:  ## end-to-end pipeline on synthetic data (M5-M6)
 	@echo "make pipeline: not implemented until milestone M6"; exit 1
