@@ -99,3 +99,80 @@ Marked `TODO(human)` to replace with the official wording and confirm numbering 
 ### Fixes during M0
 - Lint: shortened over-long package docstrings; removed an unused `noqa`.
 - Test collection crash from system `PYTHONPATH` → D-009.
+
+---
+
+## M1 — maturity equations, synthetic cohort, data schema (2026-10-09)
+
+### Decisions
+
+**D-012 · Equation functions take a mandatory `synthetic` flag where a gate applies.**
+`mirwald2002(..., synthetic=...)` has no default, so every caller must state whether the data
+are real. Why: a default of either value would silently defeat the gate or block development.
+
+**D-013 · Input checks reject wrong units, not just wrong values.**
+Stature outside 90–210 cm or a sitting/stature ratio outside 0.45–0.60 raises. Why: the most
+likely real-data mistake is metres instead of centimetres or an unsubtracted box height, and
+both produce a number that looks like a maturity offset.
+
+**D-014 · True age at PHV is set exactly, not read off the simulated curve.**
+In Preece–Baines model 1 the velocity peak sits at `theta + offset(s0, s1)`. The generator
+samples the target APHV first and solves for `theta`. Why: the growth twin (M2) is scored
+against true APHV, so the truth must be exact rather than a grid estimate.
+
+**D-015 · Truth tables are physically separate from observable tables.**
+`cohort.tables` has exactly the schema columns; generating parameters and true hazards go to
+`cohort.truth` and to a `truth/` sub-folder on disk. A test asserts no `true_*`, `hazard_*` or
+`trait_*` column appears in observable tables. Why: N1/N2 — it should be impossible to train
+on the answer by accident.
+
+**D-016 · One random stream per component.**
+Athletes, growth, visits, measurement, movement, exposure and injury each draw from their own
+generator derived from the master seed. Why: changing one component's code must not silently
+change every other component's draws, which would make before/after comparisons meaningless.
+
+**D-017 · A minimal movement simulator was added in M1.**
+The brief schedules growth and injury simulation for M1, but its own example injury process
+depends on a landing load proxy. Three session-level features are simulated now; skeleton
+sequences wait for M6.
+
+**D-018 · Stored outcome groups are finer than the analysis outcomes.**
+`injuries.outcome_group` stores `growth_related`, `non_contact_soft_tissue`,
+`other_non_contact`, `contact`, `other`. The brief's outcome (c) "all non-contact" is the union
+of the first three, formed at analysis time. Why: storing overlapping groups in one column
+would force one injury into two rows.
+
+**D-019 · SQLite via the standard library; no DuckDB dependency yet.**
+Why: the DDL is plain SQL that both accept, and nothing in M1 needs DuckDB's speed.
+
+**D-020 · Ingestion is all-or-nothing and refuses to mix synthetic with real rows.**
+Why: a partially loaded table or a database containing both kinds of data are the two ways a
+synthetic number could end up in a real result.
+
+**D-021 · A `synthetic` column was added to every table.**
+Not in the brief's schema. Why: rule 5 requires every synthetic-derived artifact to carry the
+flag; a column survives joins and exports where file-level metadata does not.
+
+**D-022 · The identity map can only be written outside the repository.**
+`pseudonymise()` raises if the path is inside the repo, and sets the file to owner-only.
+
+**D-023 · QC flags, never fixes.**
+`anthropometry_flags()` returns a table of problems and leaves the data untouched (tested).
+
+### Assumptions introduced (all in `configs/`, all need a citation or a human decision)
+- Every growth, measurement-error, movement, exposure and injury parameter in
+  `configs/sim/cohort.yaml`. The Preece–Baines rate constants and height parameters were
+  written from general knowledge of the model, not copied from a source.
+- QC limits in `configs/io/qc.yaml`.
+- OSTRC item range 0–25 and severity = sum of four items in the schema.
+
+### Changes made after first running the generator
+- Narrowed the spread of `s0` and of height gain after `theta`: the first draw produced a few
+  eight-year-olds under 100 cm, close to the schema's lower bound.
+- Lowered measurement-error SDs: with the first values about a quarter of duplicate stature
+  pairs breached the QC limit, which would have made the QC output useless as a test bed.
+- Both are tuning of assumptions for plausibility, not calibration to data.
+
+### Not done
+- GitHub push: the remote `origin` is configured, but this machine could not reach github.com
+  (IPv4 link down; GitHub has no IPv6 address). CI therefore still has not run.

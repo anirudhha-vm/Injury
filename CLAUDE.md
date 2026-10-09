@@ -15,7 +15,8 @@ Current milestone status: see `docs/plans/` (`Mx.md` = plan, `Mx_done.md` = comp
 | `make lint` | ruff check + ruff format --check + `mypy --strict` on `src/` + `paper/` results guard |
 | `make gate` | human-verification gates — **fails by design** until each `TODO(human)` is resolved |
 | `make todo` | list every `TODO(human)` |
-| `make sim` / `make pipeline` / `make paper-figs` | arrive in M1 / M6 / M7 |
+| `make sim` | generate the synthetic cohort into `data/synthetic/` |
+| `make pipeline` / `make paper-figs` | arrive in M6 / M7 |
 
 Run `make test lint` before every commit.
 

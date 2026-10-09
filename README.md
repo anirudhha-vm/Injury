@@ -3,7 +3,7 @@
 Research code for an uncertainty-aware, maturity-conditioned digital twin for prospective
 prediction of growth-related injury in youth athletes (8–18 y) from smartphone video.
 
-**Status:** M0 (scaffold) — no scientific results exist yet. Research code, not a medical device;
+**Status:** M1 complete (maturity equations, synthetic cohort, data schema) — no scientific results exist yet. Research code, not a medical device;
 outputs are decision support only.
 
 ## Quick start
@@ -12,6 +12,7 @@ outputs are decision support only.
 make setup      # uv sync + pre-commit hooks (Python 3.11 is fetched by uv)
 make test       # tests + coverage
 make lint       # ruff, mypy --strict, paper/ results guard
+make sim        # generate the synthetic cohort (300 athletes x 12 months)
 make gate       # human-verification gates (fail by design until resolved)
 make todo       # everything waiting on a human decision
 ```
