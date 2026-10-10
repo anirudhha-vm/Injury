@@ -15,7 +15,7 @@ Status: `todo` · `partial` · `done`. "Where" points to the code/config/doc tha
 | 4 | Introduction | Objectives | partial | `paper/preregistration.md` |
 | 5 | Methods | Source of data, dates, setting | todo | `docs/protocol/` |
 | 6 | Methods | Participants: eligibility, setting, treatments | partial | `docs/protocol/` |
-| 7 | Methods | Data preparation and quality checking | todo | `src/youthtwin/io/qc.py` (M1), pose QC (M3) |
+| 7 | Methods | Data preparation and quality checking | partial | `src/youthtwin/io/qc.py`, `src/youthtwin/pose/filtering.py`, trial quality and exclusion log in `src/youthtwin/pose/task_features.py` |
 | 8 | Methods | Outcome definition, assessment, blinding | partial | `configs/models/hazard.yaml`, `docs/protocol/04_injury_surveillance_sop.md` |
 | 9 | Methods | Predictors: definition, timing, measurement | partial | `configs/features/`, `configs/growth/` |
 | 10 | Methods | Sample size justification | todo | `scripts/sample_size.py` |

@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-09 (M2).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M3).
 
 ## Root
 
@@ -27,11 +27,12 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 |---|---|---|
 | `growth/equations.yaml` | Moore-2015 and Mirwald-2002 coefficients, input plausibility ranges, and the `mirwald_girls_verified` human gate | ✅ |
 | `growth/sitar.yaml` | Growth-twin settings: knots, timing prior, prior scales, integration grids, sampler, number of draws kept, coverage acceptance range | ✅ |
-| `pose/skeleton.yaml` | BlazePose landmark indices | ✅ (used M3) |
-| `pose/estimator.yaml` | Which pose estimator and model variant; fps requirements | ✅ (used M3) |
-| `pose/filter.yaml` | Gap filling, Butterworth order/cutoff, velocity units | ✅ (used M3) |
-| `pose/tasks.yaml` | Screening task list, trial counts, events per task | ✅ (used M3) |
-| `features/task_features.yaml` | Which angles/features are extracted, angle conventions, asymmetry rule, trial-quality threshold | ✅ (used M3) |
+| `pose/skeleton.yaml` | BlazePose landmark indices (must equal `pose/skeletons.py`; tested) | ✅ |
+| `pose/events.yaml` | Event-detection thresholds as fractions of leg length and degrees | ✅ (assumptions) |
+| `pose/estimator.yaml` | Which pose estimator, model file path, detection confidences, fps requirements | ✅ |
+| `pose/filter.yaml` | Gap filling, Butterworth order/cutoff, velocity units | ✅ |
+| `pose/tasks.yaml` | Screening task list, trial counts, events per task | ✅ |
+| `features/task_features.yaml` | Which angles/features are extracted, angle conventions, asymmetry index, trial-quality threshold | ✅ |
 | `features/mech.yaml` | Definitions of the mechanistic load proxies; flag that they are not force-plate validated | ✅ (used M5) |
 | `models/baselines.yaml` | Predictor sets for the three baseline models | ✅ (used M5) |
 | `models/hazard.yaml` | Prediction horizon, outcome groups, risk-set rules, hazard model variants, uncertainty options | ✅ (used M5) |
@@ -66,8 +67,18 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `sim/growth_sim.py` | Preece–Baines height curves with an exactly known age at PHV; sitting height, leg length, mass; visit schedule; measurement error | ✅ |
 | `sim/movement_sim.py` | Session-level screening summary features with a per-athlete trait and a maturity shift | ✅ (minimal) |
 | `sim/injury_sim.py` | Weekly exposure and cause-specific injuries from a known hazard process with time-loss exclusion | ✅ |
+| `sim/skeleton_sim.py` | Stylised synthetic skeleton sequences (drop jump, single-leg squat) with exactly known angles and event frames, for testing the pose pipeline | ✅ |
 | `sim/cohort.py` | Assembles schema-shaped tables plus separate truth tables; tags everything synthetic; writes parquet | ✅ |
-| `pose/` | Estimators, skeleton definitions, filtering, two-phone sync, event detection, kinematics, task features | 🔲 (M3) |
+| `pose/skeletons.py` | Landmark indices and canonical joint names for BlazePose-33 and Halpe-26; the only place raw indices appear | ✅ (Halpe-26 indices unverified) |
+| `pose/keypoints.py` | `KeypointSequence`: pixels (y down), per-frame timestamps, confidence; parquet + JSON storage with no reference to the video | ✅ |
+| `pose/filtering.py` | Confidence-gated gap filling, zero-lag 4th-order Butterworth, resampling of uneven frames, derivative per second, residual analysis | ✅ |
+| `pose/kinematics.py` | Joint-angle definitions and sign conventions: knee/hip flexion, ankle dorsiflexion, knee FPPA, pelvic drop, trunk lean, knee-ankle separation | ✅ |
+| `pose/events.py` | Event detection for drop vertical jump, single-leg squat and hop, with confidence, reported-not-guessed missing events, and manual overrides | ✅ (thresholds are assumptions) |
+| `pose/sync.py` | Time offset between the two phones by cross-correlating a shared clap or flash signal | ✅ (signal extraction from video not implemented) |
+| `pose/task_features.py` | Per-trial features at events, ranges of motion, peak angular velocities, 101-point curves; session means; event-based asymmetry; quality score and exclusion log | ✅ |
+| `pose/estimators/base.py` | `PoseEstimator` interface, video frame reader, optional-dependency loader | ✅ (frame reader unverified) |
+| `pose/estimators/mediapipe.py` | MediaPipe Tasks `PoseLandmarker` wrapper | ⚠️ written, never run |
+| `pose/estimators/rtmpose.py` | RTMPose (body with feet) wrapper via rtmlib | ⚠️ written, never run |
 | `validation/` | Markerless vs mocap agreement statistics (Paper A) | 🔲 (M4) |
 | `features/` | Mechanistic load proxies, exposure features, person-period (athlete-week) table | 🔲 (M5) |
 | `models/risk/`, `models/baselines.py` | Cause-specific discrete-time hazard models, baselines, uncertainty propagation | 🔲 (M5–M6) |
@@ -86,6 +97,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `make_synthetic_cohort.py` | Generates, validates and writes the synthetic cohort (`make sim`) | ✅ |
 | `fit_growth.py` | Fits the growth twin to a cohort directory, or updates existing posteriors with new measurements | ✅ |
 | `sim_study_growth.py` | Growth-twin simulation study on the synthetic cohort: coverage and error vs truth and vs Moore; writes scores, summary, posteriors, watermarked figure to `outputs/` (`make sim-study-growth`) | ✅ |
+| `run_pose.py` | Local videos + manifest → keypoint files, task-feature table and exclusion log | ⚠️ written, never run on real video |
 | `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
 
 ## `tests/`
@@ -107,7 +119,14 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_splines.py` | A spline that is not smooth, not linear in the tails, or differs between NumPy and PyTensor | ✅ |
 | `test_growth_state.py` | APHV not at the velocity peak; uncertainty not carried into the state; scoring errors | ✅ |
 | `test_sitar_bayes.py` | Wrong marginal likelihood; mis-calibrated or single-peaked athlete draws; update not using new data; unwatermarked synthetic figures. One `slow` end-to-end fit | ✅ |
-| v2 regression tests listed in brief §3 (angle conventions, FPPA, filtering, scaler scope, leakage, …) | The specific v2 defects | 🔲 (M1–M7) |
+| `test_landmark_indices.py` | Upper-limb landmarks used for the leg (v2); code and config disagreeing | ✅ |
+| `test_angle_conventions.py` | Included angle reported as flexion (v2); wrong signs for hip, ankle, pelvis, trunk | ✅ |
+| `test_fppa_synthetic_skeleton.py` | "Valgus" that changes with knee flexion (v2); wrong sign on one limb | ✅ |
+| `test_filtering.py` | Velocities per frame or unfiltered (v2); phase lag; wrong cut-off; bridged gaps; sync offset | ✅ |
+| `test_events.py` | Events off by more than a few frames; invented events when the clip is incomplete | ✅ |
+| `test_event_asymmetry.py` | Frame-wise left/right asymmetry, or asymmetry inside a single-leg trial (v2) | ✅ |
+| `test_pose_pipeline.py` | Features that miss the known truth; frame-rate-dependent velocity; silently dropped trials; keypoint files that point at video | ✅ |
+| Remaining v2 regression tests in brief §3 (scaler scope, leakage, growth-state collinearity, SHAP, API contract) | The specific v2 defects | 🔲 (M5–M7) |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
 
@@ -116,7 +135,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0, M1, M2 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M3 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |

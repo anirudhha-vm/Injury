@@ -270,3 +270,72 @@ reproducible commit; re-run `make sim-study-growth` from a clean tree before quo
 inside a function it had just inserted and deleted two function bodies. One background run
 exited immediately as a result. The script was rewritten whole; lint would have caught it had
 it been run before launching.
+
+---
+
+## M3 — pose and kinematics pipeline (2026-10-10)
+
+### Decisions
+
+**D-036 · Joints are addressed by name and side, never by raw index.**
+`Skeleton.index(side, joint)` is the only route to an index and `skeletons.py` the only file
+containing indices. Why: v2's shoulder-elbow-wrist "knee" was an index typo that nothing caught.
+
+**D-037 · Angles are 2D, per camera, and say so.**
+Sagittal angles from the side camera, frontal-plane angles from the front camera; functions
+refuse the wrong camera. Two-camera triangulation stays optional. Why: it is what two phones can
+support without calibration, and it keeps the frontal-plane knee angle separate from flexion,
+which was v2's "valgus" error.
+
+**D-038 · Knee FPPA sign is defined by anatomy, not by image direction.**
+Positive means the knee is medial to the hip-ankle line for either limb, given which way the
+athlete faces. Why: a sign that flips between left and right legs makes asymmetry meaningless.
+
+**D-039 · The zero-lag filter's cut-off is corrected for the second pass.**
+A 2nd-order Butterworth run forward and backward, with the design cut-off raised by 1/0.802 so
+that the -3 dB point lands on the configured cut-off (Winter). Tested at 6, 8 and 12 Hz. Without
+the correction the effective cut-off is about 20% lower than the number written in the methods.
+
+**D-040 · Gaps longer than the limit are never bridged.**
+Each run of valid samples is filtered separately; long gaps stay missing through filtering,
+angles and features, and lower the trial's quality score.
+
+**D-041 · Event thresholds are fractions of leg length.**
+Why: pixel thresholds would depend on camera distance and on the child's size, which varies by a
+factor of nearly two across 8-18 years.
+
+**D-042 · Missing events are reported with a reason; nothing is guessed.**
+A trial without the events that bound its analysis window is excluded and logged. A manual
+override table can supply frames, and those events are marked `manual`.
+
+**D-043 · No frame-wise asymmetry exists in the code.**
+Asymmetry functions accept two numbers. Bilateral tasks compare the limbs at the same events;
+unilateral tasks compare the mean of left-limb trials with the mean of right-limb trials.
+
+**D-044 · Default asymmetry index is the symmetry angle, not LSI.**
+The brief allows either. LSI is a ratio and is undefined when the two values straddle zero or one
+is near zero, which is normal for frontal-plane angles. LSI and a plain difference remain
+selectable in the config.
+
+**D-045 · Quality = the weakest of landmark confidence, completeness, and event confidence.**
+Taking the minimum means one bad aspect cannot be averaged away. The threshold is an assumption.
+
+**D-046 · Pose-estimation libraries are an optional extra and were not installed.**
+MediaPipe, OpenCV and rtmlib are declared under `[project.optional-dependencies] pose` and
+imported lazily. Why: they are large, CI does not need them, and without a video there is
+nothing to run them on. Consequence: the two estimator wrappers are unexecuted code, excluded
+from the coverage figure and labelled as such in the file map.
+
+**D-047 · A synthetic skeleton generator was added now rather than in M6.**
+Testing angles and events needs sequences with a known truth. The figure is deliberately
+stylised (for example the toe is level with the ankle so that dorsiflexion equals shank tilt).
+
+### Assumptions introduced
+All values in `configs/pose/events.yaml`; MediaPipe confidence thresholds (library defaults);
+Halpe-26 landmark indices (from memory, flagged `TODO(human)`).
+
+### Corrections to my own first drafts
+- A test expected a 4th-order analogue roll-off; the dual-pass digital filter's gain one octave
+  above cut-off is 0.115, not 0.069. The filter was right and the expectation was wrong.
+- Landmark tests were first written inside the angle-convention test file; moved to
+  `test_landmark_indices.py`, the name the brief specifies.
