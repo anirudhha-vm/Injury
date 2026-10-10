@@ -97,7 +97,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `models/risk/hazard_logit.py` | Elastic-net discrete-time logistic hazard with spline terms | ✅ |
 | `models/risk/hazard_xgb.py` | Gradient-boosted hazard with optional monotone constraints | ✅ |
 | `models/risk/hazard_neural.py` | Neural hazard (encoder + head), training with athlete-grouped early stopping, deep ensemble, train-only standardisation | ✅ |
-| `models/risk/uncertainty.py` | Risk distribution from growth-posterior draws and ensemble members; variance decomposition | ✅ (conformal intervals not implemented) |
+| `models/risk/uncertainty.py` | Risk distribution from growth-posterior draws and ensemble members; variance decomposition | ✅ (intervals reflect growth-timing uncertainty only and do not cover the true risk — see `docs/plans/M6_done.md`) |
 | `models/encoder/sequences.py` | Trial → (channels, time) array of angles and angular velocities; session stacking; channel scaler fitted on training athletes | ✅ |
 | `models/encoder/film.py` | FiLM layer (identity at initialisation) | ✅ |
 | `models/encoder/tcn.py` | Dilated residual 1D CNN encoder with optional FiLM | ✅ |

@@ -706,3 +706,26 @@ Indian reference timing and persistent training load at the next full re-run.
 
 **Process note.** The results guard rejected a `[[CITED: ...]]` tag of mine that spanned two
 lines in the pre-registration. The tag was put on one line; the guard was not loosened.
+
+---
+
+## M6 outcome (2026-10-10)
+
+**R-008 · The propagated risk intervals are not calibrated: 27% coverage of the true risk for
+nominal 90% intervals (synthetic run `ablation-b77476353614`).**
+The interval reflects growth-timing uncertainty and seed-to-seed disagreement only. It omits
+the dominant error, that the model is poorly determined by about 55 injuries: networks trained
+on the same data are wrong together. The third M6 acceptance criterion is therefore not met.
+Consequence: the band is to be described as "sensitivity to growth-timing uncertainty", never
+as a confidence interval for risk. A covering interval would need ensembles trained on
+resampled athletes or a held-out calibration step.
+
+**R-009 · Ablation ordering is not interpretable at this size.**
+Growth-aware configurations beat the growth-blind encoder on both AUC and correlation with the
+true risk (expected: the simulation makes growth a cause). Among late fusion, concatenation and
+FiLM the two measures disagree on the order and no intervals are available. Not evidence about
+hypothesis H3.
+
+**D-108 · Known gap accepted for now: the ablation runner stores metrics, not predictions.**
+Athlete-level bootstrap intervals and paired differences for the ablation need the out-of-fold
+predictions; saving them is the next change to `eval/ablation.py`.
