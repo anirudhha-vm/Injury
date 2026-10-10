@@ -35,7 +35,13 @@ from youthtwin.pose.skeletons import JOINTS, SIDES, Side
 
 FloatArray = NDArray[np.float64]
 
-SAGITTAL_ANGLES = ("knee_flexion", "hip_flexion", "ankle_dorsiflexion")
+SAGITTAL_ANGLES = (
+    "knee_flexion",
+    "hip_flexion",
+    "ankle_dorsiflexion",
+    "thigh_inclination",
+    "shank_inclination",
+)
 FEATURE_COLUMNS = [
     "athlete_id",
     "session_id",
@@ -48,6 +54,8 @@ FEATURE_COLUMNS = [
     "synthetic",
 ]
 EXCLUSION_COLUMNS = ["athlete_id", "session_id", "task", "trial", "limb", "reason", "quality"]
+# Clip-level body ratios: stored per limb but not movement features, so no asymmetry is formed.
+BODY_PROPORTIONS = ("thigh_length_fraction", "forefoot_heel_lever_ratio")
 # Task -> (window start event, window end event).
 TASK_WINDOWS: dict[str, tuple[str, str]] = {
     "drop_vertical_jump": ("initial_contact", "take_off"),
@@ -140,6 +148,28 @@ def sagittal_angles(sequence: KeypointSequence, side: Side) -> dict[str, FloatAr
         "ankle_dorsiflexion": kinematics.ankle_dorsiflexion(
             j(side, "knee"), j(side, "ankle"), j(side, "foot_index")
         ),
+        "thigh_inclination": kinematics.segment_inclination(j(side, "hip"), j(side, "knee")),
+        "shank_inclination": kinematics.segment_inclination(j(side, "knee"), j(side, "ankle")),
+    }
+
+
+def body_proportions(sequence: KeypointSequence, side: Side) -> dict[str, float]:
+    """Camera-independent body ratios from the side view (medians over the clip).
+
+    - ``thigh_length_fraction``: thigh / (thigh + shank) projected length.
+    - ``forefoot_heel_lever_ratio``: horizontal ankle-to-toe distance / horizontal ankle-to-heel
+      distance, a geometric stand-in for forefoot lever / Achilles lever.
+    """
+    j = sequence.joint
+    thigh = kinematics.segment_length(j(side, "hip"), j(side, "knee"))
+    shank = kinematics.segment_length(j(side, "knee"), j(side, "ankle"))
+    forefoot = np.abs(j(side, "foot_index")[:, 0] - j(side, "ankle")[:, 0])
+    heel = np.abs(j(side, "heel")[:, 0] - j(side, "ankle")[:, 0])
+    with np.errstate(invalid="ignore", divide="ignore"):
+        lever = np.where(heel > 0, forefoot / heel, np.nan)
+    return {
+        "thigh_length_fraction": float(np.nanmedian(thigh / (thigh + shank))),
+        "forefoot_heel_lever_ratio": float(np.nanmedian(lever)),
     }
 
 
@@ -282,6 +312,8 @@ def trial_features(
     frames = {name: event.frame for name, event in detected.events.items()}
     for side in sides:
         add(side, angles[side], frames, start, stop, time_s, with_velocity=True)
+        for name, value in body_proportions(sagittal, side).items():
+            features[(side, name)] = value
 
     if frontal is not None:
         # Map event times on the sagittal clock to the nearest frontal frame.
@@ -402,7 +434,8 @@ def session_features(
         value=("value", "mean"), quality=("quality", "mean"), synthetic=("synthetic", "all")
     )
     means["trial"] = None
-    sided = means[means["limb"].isin(SIDES)].pivot_table(
+    comparable = means["limb"].isin(SIDES) & ~means["feature"].isin(BODY_PROPORTIONS)
+    sided = means[comparable].pivot_table(
         index=["athlete_id", "session_id", "task", "feature"], columns="limb", values="value"
     )
     asymmetry_rows: list[dict[str, Any]] = []

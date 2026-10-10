@@ -1,9 +1,17 @@
-# Mechanistic apophyseal load PROXIES (contribution C4). Used from M5.
+# Mechanistic apophyseal load PROXIES (contribution C4).
 # These are proxies, not validated against force plates - label them as such everywhere.
 validated_against_force_plates: false
+# No anatomical constants are configured: each proxy is defined up to an unknown constant factor
+# (see src/youthtwin/features/mech_load.py).
 proxies:
-  patellar_tendon_traction:    # Osgood-Schlatter / SLJ mechanism
-    definition: knee_extensor_moment_proxy / (patellar_tendon_moment_arm scaled by segment length)
+  patellar_tendon_traction:    # Osgood-Schlatter / Sinding-Larsen-Johansson mechanism
+    definition: mass * g * thigh_length * sin(thigh inclination) / shank_length
   achilles_calcaneal_traction: # Sever's mechanism
-    definition: ankle_plantarflexor_moment_proxy / (achilles_moment_arm scaled by segment length)
-# TODO(M5): moment-arm scaling coefficients must come from cited literature, not invented.
+    definition: mass * g * forefoot lever / heel lever
+# Athlete-week columns the proxies are computed from (latest screening session, side view).
+sources:
+  thigh_inclination: scr__drop_vertical_jump__left__thigh_inclination_at_peak_knee_flexion
+  thigh_length_fraction: scr__drop_vertical_jump__left__thigh_length_fraction
+  forefoot_heel_lever_ratio: scr__drop_vertical_jump__left__forefoot_heel_lever_ratio
+# ASSUMPTION: the left limb at peak knee flexion in the drop vertical jump. TODO(human): decide
+# limb handling (mean of limbs, dominant limb, or the larger value).

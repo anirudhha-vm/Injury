@@ -185,6 +185,8 @@ def _build(
             TRUNK_SHARE * flexion[reference]
         )
         angles[f"ankle_dorsiflexion_{side}"] = SHANK_SHARE * flexion[side]
+        angles[f"shank_inclination_{side}"] = SHANK_SHARE * flexion[side]
+        angles[f"thigh_inclination_{side}"] = (1.0 - SHANK_SHARE) * flexion[side]
         angles[f"knee_fppa_{side}"] = pose["fppa"][side]
     return SyntheticTrial(
         task=task,

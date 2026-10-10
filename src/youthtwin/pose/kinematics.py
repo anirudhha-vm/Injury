@@ -16,6 +16,7 @@ Sagittal (side camera):
 - **ankle dorsiflexion** = 90 - included angle(knee, ankle, foot_index). Positive when the shank
   moves over the foot. The ankle and toe landmarks are not on the anatomical axes, so there is
   a constant offset: use changes from a standing reference, not absolute values.
+- **thigh / shank inclination** = unsigned angle of the segment from vertical.
 
 Frontal (front camera, athlete facing the camera):
 
@@ -68,6 +69,18 @@ def hip_flexion(shoulder: FloatArray, hip: FloatArray, knee: FloatArray) -> Floa
 def ankle_dorsiflexion(knee: FloatArray, ankle: FloatArray, foot_index: FloatArray) -> FloatArray:
     """Sagittal ankle dorsiflexion: positive when the shank moves over the foot."""
     return _RIGHT_ANGLE - included_angle(knee, ankle, foot_index)
+
+
+def segment_inclination(proximal: FloatArray, distal: FloatArray) -> FloatArray:
+    """Unsigned angle of a segment from vertical (0 = vertical, 90 = horizontal), any camera."""
+    horizontal = np.abs(distal[..., 0] - proximal[..., 0])
+    vertical = np.abs(distal[..., 1] - proximal[..., 1])
+    return np.asarray(np.degrees(np.arctan2(horizontal, vertical)), dtype=np.float64)
+
+
+def segment_length(proximal: FloatArray, distal: FloatArray) -> FloatArray:
+    """Projected segment length in pixels."""
+    return np.asarray(np.linalg.norm(distal - proximal, axis=-1), dtype=np.float64)
 
 
 def _medial_sign(side: Side, facing_camera: bool) -> float:
