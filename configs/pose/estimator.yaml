@@ -1,10 +1,15 @@
-# Pose estimators compared in Paper A (brief §6.3). Used from M3.
+# Pose estimators compared in Paper A (brief §6.3).
 default: mediapipe
 mediapipe:
   api: tasks_pose_landmarker   # legacy mp.solutions.pose is deprecated - do not use
-  model: heavy
-  running_mode: VIDEO
+  # TODO(human): download pose_landmarker_heavy.task (MediaPipe model page) to a local,
+  # git-ignored folder and point this at it.
+  model_path: models/pose_landmarker_heavy.task
+  min_pose_detection_confidence: 0.5   # ASSUMPTION (library default)
+  min_tracking_confidence: 0.5         # ASSUMPTION (library default)
 rtmpose:
-  backend: rtmlib              # or mmpose
+  mode: performance            # rtmlib: lightweight | balanced | performance
+  inference_backend: onnxruntime
+  device: cpu
 min_fps: 60
 target_fps: 120

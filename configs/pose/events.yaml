@@ -1,0 +1,15 @@
+# Event detection thresholds (brief §6.3). Heights are fractions of leg length (hip-knee-ankle),
+# so they do not depend on camera distance or athlete size.
+# Every value is an ASSUMPTION to be tuned on real clips; TODO(human): provide test clips.
+baseline_frames: 10               # frames at the start used for the standing / on-box reference
+contact:
+  height_threshold: 0.06          # feet lower than this above the floor count as in contact
+  min_contact_frames: 3
+  min_flight_frames: 3
+drop_vertical_jump:
+  box_drop_fraction: 0.15         # box_drop = feet have descended this fraction of box height
+  min_box_height: 0.15            # the athlete must start at least this high above the floor
+single_leg_squat:
+  onset_deg: 8.0                  # knee flexion above standing baseline that starts the squat
+  min_depth_deg: 25.0             # a valid squat flexes at least this far beyond baseline
+confidence_window_frames: 5       # frames either side of an event checked for missing data
