@@ -90,6 +90,11 @@ ignore_missing_imports = true
 module = ["youthtwin.growth.sitar_bayes"]
 disallow_untyped_calls = false
 
+[[tool.mypy.overrides]]
+# torch.nn.Module.__call__ is typed as returning Any.
+module = ["youthtwin.models.encoder.*", "youthtwin.models.pretrain.*", "youthtwin.models.risk.hazard_neural"]
+warn_return_any = false
+
 # PyTorch is taken from the CPU-only index: the models are small, and the default wheels bundle
 # several gigabytes of GPU libraries. Install a CUDA build by hand if a GPU is wanted.
 [[tool.uv.index]]
