@@ -108,6 +108,7 @@ def main(
     draws: int | None = None,
     tune: int | None = None,
     seed: int | None = None,
+    knots: str | None = None,
     out_dir: Path | None = None,
 ) -> None:
     cohort_config = load_config("sim/cohort.yaml")
@@ -116,6 +117,8 @@ def main(
         cohort_config["n_athletes"] = n_athletes
     if seed is not None:
         cohort_config["seed"] = seed
+    if knots is not None:  # e.g. --knots="-9,-7,-5,-3,-1.5,-0.5,0.5,1.5,3,5"
+        model_config["spline"]["knots_years"] = [float(k) for k in knots.split(",")]
     for key, value in (("method", method), ("draws", draws), ("tune", tune)):
         if value is not None:
             model_config["inference"][key] = value

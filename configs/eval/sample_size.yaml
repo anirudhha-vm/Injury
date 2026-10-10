@@ -1,0 +1,13 @@
+# Sample-size planning scenarios (Riley et al. criteria). Unit: one athlete-season.
+# Proportions of athletes with at least one growth-related injury in a season:
+#   0.04  [[time-loss apophyseal injuries: 603 in 16,024 player-seasons, BJSM 2025;59:1663]]
+#   0.08, 0.15  ASSUMPTION: wider definitions (physeal and bone-stress injuries, non-time-loss
+#               problems captured by the weekly questionnaire) and ages concentrated at 11-16 y.
+# TODO(human): replace with the cohort's own first-season incidence as soon as it is known.
+prevalence_scenarios: [0.04, 0.08, 0.15]
+parameter_scenarios: [3, 5, 10, 20]
+cohort_size_scenarios: [300, 600, 1000, 2000]
+fraction_of_max_r2: 0.15     # Riley et al. default when no estimate of model performance exists
+shrinkage: 0.9
+optimism: 0.05
+margin: 0.05
