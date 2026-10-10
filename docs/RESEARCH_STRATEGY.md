@@ -106,8 +106,9 @@ Intervals for age at PHV cover the truth 88–89% of the time within three years
 for children more than three years before it.
 - **Pre-register the restriction**: uncertainty claims apply within three years of PHV; younger
   children are reported separately and flagged as low-information wherever results are shown.
-- **Run the one untested fix**: spline flexibility extended to nine years before PHV. Started
-  2026-10-10; the result will be added to `docs/plans/M2_done.md` whichever way it comes out.
+- **The one untested fix was run and did not finish**: spline flexibility extended to nine
+  years before PHV was stopped after 7.7 hours with no chain complete. It is not a practical
+  fix as specified (`docs/plans/M2_done.md`). The restriction above therefore stands.
 - Not pursuing further variants without real data: each costs about three hours and the
   synthetic curves are themselves an assumption.
 

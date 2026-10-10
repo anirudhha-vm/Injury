@@ -729,3 +729,10 @@ hypothesis H3.
 **D-108 · Known gap accepted for now: the ablation runner stores metrics, not predictions.**
 Athlete-level bootstrap intervals and paired differences for the ablation need the out-of-fold
 predictions; saving them is the next change to `eval/ablation.py`.
+
+**R-010 · Wider-knot growth model abandoned as impractical.**
+Started from clean commit `b6db852`; stopped after 7.7 hours of wall-clock time with none of
+eight chains finished, against 40 and 90 minutes for the earlier models. The added knots cover
+ages where the cohort has few measurements, leaving that part of the curve barely determined.
+No result was obtained, so nothing about coverage can be claimed for it. The pre-registered
+restriction of growth-twin uncertainty claims to within three years of PHV (H1b) stands.

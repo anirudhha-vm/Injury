@@ -36,9 +36,13 @@ estimated about 0.9 years too early with intervals that do not reflect it.
 - **A cohort-level prior on timing** (athletes with little information shrink toward the
   cohort's typical age at PHV): tested against the saved fit with plug-in values; coverage for
   the far-before-PHV group stayed at about 0.55. Left in the code, switched off.
-- **Wider spline knots** (flexible from 9 instead of 6 years before PHV): could only be tried
-  with a fast optimisation-based fit, which collapses a variance parameter and gives unusable
-  intervals. Inconclusive. A proper test needs a full 90-minute run.
+- **Wider spline knots** (flexible from 9 instead of 6 years before PHV, ten knots): a fast
+  optimisation-based fit collapses a variance parameter and gives unusable intervals. The
+  proper run was then started from clean commit `b6db852` and **stopped after 7.7 hours of
+  wall-clock time with none of its eight chains finished** (the machine was shared with other
+  jobs for part of that time; the two earlier models took 40 and 90 minutes). The extra knots
+  sit where the cohort has little data, so the curve there is barely determined and the sampler
+  crawls. No coverage figure exists for this variant. It is not a practical fix as specified.
 
 ## Interpretation
 For a child several years before the growth spurt, one season of steady childhood growth
@@ -54,7 +58,8 @@ This matches the literature's warning that maturity prediction degrades with dis
   years as low-information.
 
 ## Open, for a team decision
-- Run the wider-knot model properly (about 3 hours for both sexes).
+- A wider-knot model would need a stronger prior on the curve's childhood section (or a
+  parametric childhood term) to be estimable; untested.
 - Model the Moore prior's error as growing with distance from PHV.
 - Or accept and pre-register the restriction: uncertainty claims apply within 3 years of PHV.
 
