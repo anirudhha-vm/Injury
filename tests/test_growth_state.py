@@ -224,3 +224,18 @@ def test_scoring_against_known_truth() -> None:
 def test_maturity_strata() -> None:
     strata = evaluation.maturity_stratum(np.array([-2.0, -1.0, 0.0, 1.0, 2.5]), band_years=1.0)
     assert strata.tolist() == ["pre_phv", "circa_phv", "circa_phv", "circa_phv", "post_phv"]
+
+
+def test_older_saved_posteriors_still_load(tmp_path: Path) -> None:
+    """Files saved before the cohort prior was added have no cohort arrays."""
+    posterior = _posterior(spread=0.2)
+    posterior.save(tmp_path / "old")
+    with np.load(tmp_path / "old.npz") as stored:
+        kept = {k: stored[k] for k in stored.files if not k.startswith("cohort_")}
+    np.savez_compressed(tmp_path / "old.npz", **kept)
+    loaded = SitarPosterior.load(tmp_path / "old")
+    assert np.isnan(loaded.cohort_mean).all() and np.isnan(loaded.cohort_sd).all()
+    np.testing.assert_allclose(loaded.aphv(), posterior.aphv())
+    np.savez_compressed(tmp_path / "old.npz", **{k: v for k, v in kept.items() if k != "beta"})
+    with pytest.raises(ValueError, match="missing"):
+        SitarPosterior.load(tmp_path / "old")

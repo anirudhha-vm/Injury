@@ -56,6 +56,8 @@ _ARRAY_FIELDS = (
     "cohort_sd",
 )
 
+_OPTIONAL_FIELDS = ("cohort_mean", "cohort_sd")
+
 
 def age_on(dob_month: str, when: date) -> float:
     """Decimal age on ``when`` for a month-precision date of birth (taken as mid-month)."""
@@ -338,7 +340,17 @@ class SitarPosterior:
     def load(cls, path: Path) -> SitarPosterior:
         info = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))
         with np.load(path.with_suffix(".npz")) as stored:
-            arrays = {name: np.asarray(stored[name], dtype=np.float64) for name in _ARRAY_FIELDS}
+            arrays = {
+                name: np.asarray(stored[name], dtype=np.float64)
+                for name in _ARRAY_FIELDS
+                if name in stored
+            }
+        # Files written before the cohort prior existed lack these; NaN means "not used".
+        for name in _OPTIONAL_FIELDS:
+            arrays.setdefault(name, np.full_like(arrays["sigma"], np.nan))
+        absent = [name for name in _ARRAY_FIELDS if name not in arrays]
+        if absent:
+            raise ValueError(f"{path.name}: saved posterior is missing {absent}")
         return cls(
             athlete_ids=tuple(info["athlete_ids"]),
             knots=tuple(info["knots"]),
