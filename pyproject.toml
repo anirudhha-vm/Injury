@@ -19,6 +19,14 @@ dependencies = [
     "typer>=0.12",
 ]
 
+[project.optional-dependencies]
+# Needed only to run pose estimation on real video (scripts/run_pose.py). Not installed in CI.
+pose = [
+    "mediapipe>=0.10.14",
+    "opencv-python-headless>=4.9",
+    "rtmlib>=0.0.13",
+]
+
 [dependency-groups]
 dev = [
     "mypy>=1.11",
@@ -48,6 +56,9 @@ markers = [
 [tool.coverage.run]
 branch = true
 source = ["youthtwin"]
+# Estimator wrappers need real video, a model file and the optional pose extra; they are
+# unverified until a human supplies test clips (see docs/plans/M3_done.md).
+omit = ["*/pose/estimators/mediapipe.py", "*/pose/estimators/rtmpose.py"]
 
 [tool.coverage.report]
 fail_under = 85
@@ -67,8 +78,8 @@ strict = true
 files = ["src"]
 
 [[tool.mypy.overrides]]
-# PyMC and PyTensor ship without type information.
-module = ["pymc.*", "pytensor.*"]
+# PyMC, PyTensor and SciPy ship without type information.
+module = ["pymc.*", "pytensor.*", "scipy.*"]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
