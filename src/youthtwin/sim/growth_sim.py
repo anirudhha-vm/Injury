@@ -80,9 +80,14 @@ def pb1_peak_offset(s0: FloatArray, s1: FloatArray) -> FloatArray:
         _PEAK_SEARCH_STEP_YEARS,
     )
     shape = _pb1_velocity_shape(grid[None, :], s0[:, None], s1[:, None])
-    k = np.argmax(shape, axis=1)
-    if np.any(k == 0) or np.any(k == grid.size - 1):
-        raise ValueError("Velocity peak outside the search window; check s0/s1")
+    # The pubertal peak is the highest *interior local* maximum. For some parameter pairs the
+    # still-decelerating childhood velocity at the window edge is marginally higher than the
+    # pubertal peak, so a global maximum would pick the edge.
+    interior = np.zeros_like(shape, dtype=np.bool_)
+    interior[:, 1:-1] = (shape[:, 1:-1] > shape[:, :-2]) & (shape[:, 1:-1] >= shape[:, 2:])
+    if not interior.any(axis=1).all():
+        raise ValueError("No pubertal velocity peak in the search window; check s0/s1")
+    k = np.argmax(np.where(interior, shape, -np.inf), axis=1)
     rows = np.arange(s0.size)
     left, mid, right = shape[rows, k - 1], shape[rows, k], shape[rows, k + 1]
     # Parabolic refinement of the grid maximum.

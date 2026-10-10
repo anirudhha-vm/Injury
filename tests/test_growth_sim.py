@@ -74,8 +74,21 @@ def test_true_aphv_is_exactly_the_velocity_peak(curves: growth_sim.GrowthCurves)
 
 
 def test_peak_offset_rejects_degenerate_rates() -> None:
-    with pytest.raises(ValueError, match="search window"):
+    with pytest.raises(ValueError, match="No pubertal velocity peak"):
         growth_sim.pb1_peak_offset(np.array([0.001]), np.array([0.002]))
+
+
+def test_peak_offset_finds_the_pubertal_peak_not_the_childhood_edge() -> None:
+    """Regression: with s0 = 0.148, s1 = 0.905 the childhood velocity 4 years before theta is
+    marginally higher than the pubertal peak, and a global maximum picked the window edge."""
+    s0, s1 = np.array([0.148]), np.array([0.905])
+    offset = growth_sim.pb1_peak_offset(s0, s1)[0]
+    assert -2.5 < offset < 0.5  # an interior point, not the edge at -4
+    shape = growth_sim._pb1_velocity_shape
+    here = shape(np.array([offset]), s0, s1)[0]
+    assert here > shape(np.array([offset - 0.01]), s0, s1)[0]
+    assert here > shape(np.array([offset + 0.01]), s0, s1)[0]
+    assert shape(np.array([-4.0]), s0, s1)[0] > here  # the edge really is higher
 
 
 def test_aphv_distribution_matches_config(
