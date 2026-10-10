@@ -21,6 +21,7 @@ Current milestone status: see `docs/plans/` (`Mx.md` = plan, `Mx_done.md` = comp
 | `make evaluate` | out-of-fold evaluation of the tabular risk models on synthetic data |
 | `make ablation` | the nine-configuration ablation grid (slow) |
 | `make paper-figs` | regenerate every figure and table under `paper/` from the latest runs |
+| `make dashboard-data`, `make dashboard` | build the dashboard bundle; open the local research dashboard |
 | `make pipeline` | `sim` → `evaluate` → `paper-figs` |
 
 Run `make test lint` before every commit.

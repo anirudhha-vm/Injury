@@ -584,3 +584,38 @@ still checks that anything present has a provenance sidecar.
 
 ### Corrections to my own first drafts
 A hand-worked Brier score in a test was mis-added (the code was right).
+
+---
+
+## M8 — research dashboard and decision-support prompts (2026-10-10)
+
+**D-089 · The app only reads a pre-built bundle.**
+Building (models, explanations) is separate from viewing. Why: the app starts instantly, and
+everything on screen exists as a file that can be inspected and traced.
+
+**D-090 · Risk on screen is out-of-fold.**
+Each athlete's timeline comes from a model fitted without them, with an interval from growth
+posterior draws. Showing in-sample risk would look far better than the model deserves.
+
+**D-091 · Rules see a deliberately narrow view of the athlete.**
+`AthleteWeek` holds predicted risk, its cohort percentile and interval, height velocity,
+maturity offset and screening age. The elevated-risk prompt depends on predicted risk only.
+A test sweeps maturity offset and growth velocity and asserts no elevated-risk prompt appears.
+This is the direct replacement for v2's "bio_risk > 0.8 means CRITICAL" rule.
+
+**D-092 · Wording is checked by code, at build time.**
+A list of forbidden fragments (diagnostic and prescriptive language) and a required "consider"
+framing; a failing prompt aborts the bundle build.
+
+**D-093 · Elevated risk is defined relative to the cohort that week, not by an absolute cut-off.**
+Absolute thresholds are a pre-registration decision that has not been made; a percentile makes
+no claim about what level of risk matters clinically.
+
+**D-094 · Evidence statements are paraphrases of the brief and flagged unverified.**
+The library carries `verified_by_human: false` and the dashboard says so beside the prompts.
+
+**D-095 · The dashboard states on screen that the synthetic models are near chance.**
+Otherwise a polished risk timeline invites trust the numbers have not earned.
+
+**D-096 · Matplotlib figures, no extra plotting dependency.**
+The same watermarking helper as every other figure applies.

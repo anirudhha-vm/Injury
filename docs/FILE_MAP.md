@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M7).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M8).
 
 ## Root
 
@@ -14,7 +14,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `README.md` | Entry point: status, quick start, pointers | ✅ |
 | `pyproject.toml` | Package metadata, dependencies, and ruff / mypy / pytest / coverage settings | ✅ |
 | `uv.lock` | Exact pinned versions of every dependency | ✅ |
-| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`, `evaluate`, `ablation`, `paper-figs`, `pipeline` | ✅ |
+| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`, `evaluate`, `ablation`, `dashboard-data`, `dashboard`, `paper-figs`, `pipeline` | ✅ |
 | `.pre-commit-config.yaml` | Blocks video files, `.env` files, and Supabase secret keys from being committed; runs ruff and the paper results guard | ✅ |
 | `.github/workflows/ci.yml` | CI: lint + tests (blocking), tracked-video check, human gates (visible, non-blocking) | ✅ |
 | `.gitignore` | Keeps raw video, data, secrets, and run outputs out of git | ✅ |
@@ -41,6 +41,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `models/neural.yaml` | Neural hazard training, growth-vector and tabular columns, uncertainty draws, pre-training | ✅ |
 | `eval/splits.yaml` | Grouped / nested / temporal / leave-one-academy-out split definitions | ✅ (read by scripts from M7) |
 | `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
+| `dashboard.yaml` | Prompt thresholds, uncertainty draws, growth-curve grid, labels shown | ✅ (thresholds are placeholders) |
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations (names and switches only, never results) | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
@@ -115,7 +116,10 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `explain/shap_utils.py` | SHAP on the fitted tabular models; additivity; values summed back to original inputs | ✅ |
 | `explain/integrated_gradients.py` | Integrated-gradients attributions for networks; pooling over a session's trials | ✅ |
 | `explain/counterfactual.py` | What-if changes to inputs, labelled as model sensitivity, not causal effect | ✅ |
-| `recommend/` | Decision-support text rules with an evidence library | 🔲 (M8) |
+| `recommend/rules.py` | Decision-support prompts from model outputs; wording and citation checks; no elevated-risk prompt from maturity alone | ✅ |
+| `recommend/evidence_library.yaml` | Evidence statements and citations behind the prompts | ✅ (not verified against the papers) |
+| `dashboard/bundle.py` | Builds and loads the dashboard data bundle: growth curves, out-of-fold risk with uncertainty, SHAP contributions, prompts, replay keypoints | ✅ |
+| `dashboard/figures.py` | The dashboard's plots, watermarked when synthetic | ✅ |
 
 Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their purpose and milestone.
 
@@ -132,6 +136,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `outputs/ablation/<run_id>/results.csv` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
+| `build_dashboard.py` | Builds the dashboard bundle from the synthetic cohort and saved growth posteriors (`make dashboard-data`) | ✅ |
 | `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
 
 ## `tests/`
@@ -171,6 +176,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
 | `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |
+| `test_dashboard.py` | Prescriptive or diagnostic prompt wording; risk asserted from maturity alone (v2); uncited prompts; identifying or video fields in the bundle; app crashes | ✅ |
 | `test_evaluation_report.py` | Tables that cannot be traced; figures or tables in `paper/` without provenance | ✅ |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
@@ -180,7 +186,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M7 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M8 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
@@ -190,4 +196,4 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `paper/figures/`, `paper/tables/` | Generated only by `scripts/make_figures.py`, each file with a provenance sidecar; git-ignored (regenerate, never edit) | ✅ |
 | `data/README.md`, `data/schema/README.md` | What lives where, privacy rules | ✅ |
 | `data/schema/schema.sql` | SQL DDL for the nine tables | ✅ |
-| `apps/twin_dashboard/` | Streamlit research dashboard | 🔲 (M8) |
+| `apps/twin_dashboard/app.py` | Streamlit research dashboard over a bundle directory; local only | ✅ |

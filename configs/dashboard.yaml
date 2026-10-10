@@ -1,0 +1,19 @@
+# Research dashboard and decision-support prompts (brief §6.9). All thresholds are ASSUMPTIONS
+# for demonstration. TODO(human): the team decides whether and how prompts are shown.
+prompts:
+  elevated_risk_percentile: 90     # risk in the top 10% of the cohort that week
+  wide_interval_ratio: 1.0         # risk interval wider than this multiple of the risk itself
+  rapid_growth_velocity_cm_per_year: 7.0
+  stale_screen_weeks: 10
+  low_information_maturity_offset: -3.0   # growth-state uncertainty is understated beyond this (M2)
+uncertainty:
+  n_growth_draws: 30
+  interval_level: 0.90
+growth_curve:
+  age_step_years: 0.05
+  years_before_first_visit: 1.0
+  years_after_last_visit: 1.0
+shap:
+  top_inputs: 6
+labels: [y_growth_related, y_non_contact_soft_tissue, y_all_non_contact]
+n_folds: 5

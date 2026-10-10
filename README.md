@@ -3,7 +3,7 @@
 Research code for an uncertainty-aware, maturity-conditioned digital twin for prospective
 prediction of growth-related injury in youth athletes (8–18 y) from smartphone video.
 
-**Status:** M0-M7 built on synthetic data. The pose pipeline has not been run on real video (no test clips yet). No scientific results exist. Research code, not a medical device;
+**Status:** M0-M8 built on synthetic data. The pose pipeline has not been run on real video (no test clips yet). No scientific results exist. Research code, not a medical device;
 outputs are decision support only.
 
 ## Quick start
@@ -15,6 +15,7 @@ make lint       # ruff, mypy --strict, paper/ results guard
 make sim        # generate the synthetic cohort (300 athletes x 12 months)
 make evaluate   # out-of-fold evaluation of the tabular risk models (synthetic)
 make paper-figs # regenerate every figure and table under paper/ from the latest runs
+make dashboard-data && make dashboard   # local browser dashboard (synthetic cohort)
 make gate       # human-verification gates (fail by design until resolved)
 make todo       # everything waiting on a human decision
 ```

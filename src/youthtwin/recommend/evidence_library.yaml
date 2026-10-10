@@ -1,0 +1,31 @@
+# Evidence library for decision-support prompts.
+# Every entry must be checked against the original paper before any use beyond development.
+# TODO(human): verify each statement and citation; statements are paraphrased from the project
+# brief (docs/PROJECT_BRIEF.md §2.2, §9), not quoted from the papers.
+verified_by_human: false
+entries:
+  screening_limits:
+    statement: >-
+      Single screening tests have poor predictive value for injury in individuals; screening
+      results should inform discussion, not decide participation.
+    citation: "Bahr R (2016) Br J Sports Med 50:776-780."
+  maturity_and_injury_type:
+    statement: >-
+      In a prospective academy cohort, growth-related injuries were more frequent before peak
+      height velocity, while soft-tissue injuries were more frequent after it.
+    citation: "Hall ECR et al. (2022) Phys Ther Sport 55:111-118."
+  growth_load_and_injury:
+    statement: >-
+      In high-level youth football, weekly training hours were associated with gradual-onset,
+      bone and physis injuries, and body-mass change and greater maturity with sudden-onset injury.
+    citation: "(2024) Sports Med Int Open 8. TODO(human): full author list."
+  maturity_estimate_uncertainty:
+    statement: >-
+      Maturity-offset predictions are least accurate in children far from peak height velocity
+      and in early and late maturers.
+    citation: "Malina RM, Koziel SM (2014) J Sports Sci; Moore SA et al. (2015) Med Sci Sports Exerc 47:1755-1764."
+  prediction_model_reporting:
+    statement: >-
+      Outputs of a prediction model are probabilities with uncertainty and should be presented
+      with their calibration and limitations.
+    citation: "Collins GS et al. (2024) BMJ 385:e078378 (TRIPOD+AI)."
