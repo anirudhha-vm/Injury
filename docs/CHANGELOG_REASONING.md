@@ -619,3 +619,26 @@ Otherwise a polished risk timeline invites trust the numbers have not earned.
 
 **D-096 · Matplotlib figures, no extra plotting dependency.**
 The same watermarking helper as every other figure applies.
+
+---
+
+## M9 — paper scaffolds (2026-10-10)
+
+**D-097 · The methods draft is generated, committed, and guarded by a test.**
+`paper/methods_draft.md` is rendered from the YAML files; `test_paper_scaffold.py` fails when
+the committed file differs from what the current configs produce. Why: the brief asks for
+methods "from configs, not from memory", and a generated-but-unchecked file would drift the
+first time someone changed a config.
+
+**D-098 · Every configured value is written inside a `[[SPEC: …]]` tag.**
+The results guard then distinguishes design values from results automatically, and the draft
+passes the same check as the rest of `paper/`.
+
+**D-099 · The draft states what is unverified.**
+It prints the Mirwald verification status from the gate, that load proxies are not validated,
+that hyperparameters are starting values, and that simulation parameters are assumptions.
+
+**D-100 · Synthetic results have their own section in the Paper B outline.**
+A test asserts the word "synthetic" does not appear in the Results section.
+
+**Deviation:** the M9 plan file was written with the work, not before it.

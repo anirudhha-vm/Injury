@@ -1,4 +1,4 @@
-.PHONY: setup test test-slow lint gate sim sim-study-growth evaluate ablation dashboard-data dashboard pipeline paper-figs todo
+.PHONY: setup test test-slow lint gate sim sim-study-growth evaluate ablation dashboard-data dashboard pipeline methods paper-figs todo
 
 # A system PYTHONPATH (e.g. from a ROS install) leaks foreign pytest plugins into the venv.
 unexport PYTHONPATH
@@ -45,6 +45,9 @@ dashboard:  ## open the local research dashboard in a browser
 
 pipeline:  ## synthetic cohort -> evaluation -> paper figures and tables
 	$(MAKE) sim evaluate paper-figs
+
+methods:  ## regenerate paper/methods_draft.md from the configs
+	uv run python scripts/draft_methods.py
 
 paper-figs:  ## regenerate every figure and table in paper/ from the latest runs
 	uv run python scripts/make_figures.py
