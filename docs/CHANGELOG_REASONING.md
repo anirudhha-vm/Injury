@@ -642,3 +642,10 @@ that hyperparameters are starting values, and that simulation parameters are ass
 A test asserts the word "synthetic" does not appear in the Results section.
 
 **Deviation:** the M9 plan file was written with the work, not before it.
+
+**D-101 · A cohort folder of parquet tables is the real-data entry point.**
+`io.ingest.read_cohort_dir` reads the same layout `make sim` writes and validates every row;
+`scripts/check_cohort.py` adds QC; `scripts/evaluate.py --cohort-dir` and
+`scripts/fit_growth.py` run from it. Why: until this, every analysis script generated the
+synthetic cohort internally, so there was no command to run on real data. The neural ablation
+and the dashboard build are still synthetic-only, and the README says so.

@@ -1,15 +1,16 @@
 """Evaluate the tabular risk models with athlete-grouped cross-validation.
 
-Generates the synthetic cohort from its seed, builds the athlete-week table (with growth-twin
-features if ``--posterior-dir`` is given), produces out-of-fold predictions for the three
-baselines, the penalised-logistic hazard and the boosted hazard, and writes to
-``outputs/evaluation/<run_id>/``:
+Reads a cohort directory (``--cohort-dir``: one parquet file per table, validated against the
+schema) or, without one, generates the synthetic cohort from its seed. Builds the athlete-week
+table (with growth-twin features if ``--posterior-dir`` is given), produces out-of-fold
+predictions for the three baselines, the penalised-logistic hazard and the boosted hazard, and
+writes to ``outputs/evaluation/<run_id>/``:
 
 ``predictions.parquet, performance.csv, differences.csv, decision_curve.csv, calibration.csv,
 subgroups.csv, shap_importance.csv, what_if.json, run.json``
 
-SYNTHETIC: a pipeline check, not findings. Use ``scripts/make_figures.py`` to turn a run into
-figures and tables.
+Without ``--cohort-dir`` the run is SYNTHETIC: a pipeline check, not findings. Use
+``scripts/make_figures.py`` to turn a run into figures and tables.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from youthtwin.explain import counterfactual, shap_utils
 from youthtwin.features.mech_load import add_mech_proxies
 from youthtwin.features.person_period import build_person_period
 from youthtwin.growth.growth_state import SitarPosterior
+from youthtwin.io.ingest import read_cohort_dir
 from youthtwin.models.baselines import make_baseline
 from youthtwin.models.risk.hazard_logit import make_hazard_logit
 from youthtwin.models.risk.hazard_xgb import make_hazard_xgb
@@ -39,6 +41,7 @@ SUBGROUP_COLUMNS = ["sex", "sport", "age", "moore_maturity_offset", "twin_maturi
 
 def main(
     label: str = "y_growth_related",
+    cohort_dir: Path | None = None,
     posterior_dir: Path | None = None,
     n_athletes: int | None = None,
     n_folds: int = 5,
@@ -63,14 +66,19 @@ def main(
         "baselines": baseline_config,
         "label": label,
         "folds": n_folds,
+        "cohort_dir": str(cohort_dir) if cohort_dir else None,
     }
-    metadata = run_metadata(seed=seed, config=run_config, synthetic=True)
     run_id = f"evaluation-{config_hash(run_config)}"
     target = out_dir or repo_root() / "outputs" / "evaluation" / run_id
     target.mkdir(parents=True, exist_ok=True)
     started = time.time()
 
-    cohort = generate_cohort(cohort_config)
+    if cohort_dir is not None:
+        tables = read_cohort_dir(cohort_dir)  # validated against the schema
+    else:
+        tables = generate_cohort(cohort_config).tables
+    synthetic = bool(tables["athletes"]["synthetic"].all())
+    metadata = run_metadata(seed=seed, config=run_config, synthetic=synthetic)
     posteriors = None
     if posterior_dir is not None:
         posteriors = {
@@ -79,7 +87,7 @@ def main(
             if (posterior_dir / f"posterior_{sex}.npz").is_file()
         }
     period = build_person_period(
-        cohort.tables,
+        tables,
         config=person_period_config,
         hazard_config=hazard_config,
         posteriors=posteriors,
@@ -141,7 +149,7 @@ def main(
             )
             (target / "what_if.json").write_text(json.dumps(what_if, indent=2), encoding="utf-8")
     tables["shap_importance"] = pd.concat(importances, ignore_index=True).assign(
-        label=label, synthetic=True, note="log-odds units; fold 0 training athletes"
+        label=label, synthetic=synthetic, note="log-odds units; fold 0 training athletes"
     )
     for name, table in tables.items():
         table.to_csv(target / f"{name}.csv", index=False)
@@ -156,7 +164,8 @@ def main(
     }
     (target / "run.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
 
-    typer.echo(f"\nSYNTHETIC evaluation {run_id} -> {target}")
+    kind = "SYNTHETIC " if synthetic else ""
+    typer.echo(f"\n{kind}evaluation {run_id} -> {target}")
     primary = tables["performance"][
         tables["performance"]["metric"].isin(
             [metrics_config["primary_metric"], "calibration_slope"]

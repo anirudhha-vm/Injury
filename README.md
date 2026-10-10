@@ -30,6 +30,33 @@ make todo       # everything waiting on a human decision
 | `docs/CHANGELOG_REASONING.md` | what changed and why |
 | `docs/plans/` | per-milestone plans and completion notes |
 
+## When real data arrives
+
+Before any of this: resolve the human gates (`make gate` must pass), register
+`paper/preregistration.md`, and have ethics approval in place.
+
+```bash
+# 1. Put the tables in one folder as parquet files named like the schema tables
+#    (athletes, anthropometrics, exposure_weekly, injuries, screening_sessions, task_features),
+#    with pseudonymous IDs and synthetic = false. Then validate and run quality control:
+uv run python scripts/check_cohort.py data/processed/cohort
+
+# 2. Screening videos (stay on the local disk) -> keypoints and task features:
+uv sync --extra pose
+uv run python scripts/run_pose.py data/raw_video_LOCAL_ONLY/manifest.csv
+
+# 3. Growth twin posteriors (about 1.5 hours per sex):
+uv run python scripts/fit_growth.py data/processed/cohort outputs/growth/cohort
+
+# 4. Out-of-fold evaluation of the tabular risk models, then figures and tables:
+uv run python scripts/evaluate.py --cohort-dir data/processed/cohort --posterior-dir outputs/growth/cohort
+make paper-figs
+```
+
+Not yet wired for real data: the neural models (`scripts/ablation.py`) and the dashboard build
+both still generate the synthetic cohort themselves, and `scripts/run_pose.py` has never been
+run on a real video. See `docs/plans/M*_done.md` for what each milestone did and did not do.
+
 ## Privacy
 
 Raw video of minors never enters this repository or any cloud service. Video stays in

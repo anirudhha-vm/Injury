@@ -65,7 +65,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `growth/sitar_bayes.py` | Hierarchical growth model: data preparation, marginal likelihood (athlete effects integrated out), NUTS over the shared curve, exact athlete-effect draws, incremental update, diagnostics | ✅ (interval coverage in range within 3 years of PHV, not beyond — see `docs/plans/M2_done.md`) |
 | `growth/growth_state.py` | `SitarPosterior` (saved draws, plain NumPy) and `GrowthState`: age at PHV, maturity offset, height velocity, % of peak velocity, 90-day forecast, each with mean, SD and draws | ✅ (stature only) |
 | `io/schema.py` | Row models for the nine tables: types, units, ranges, privacy rules (month-only DOB, no video paths) | ✅ |
-| `io/ingest.py` | Validates tables row by row and loads them into SQLite; all-or-nothing; refuses to mix synthetic and real rows | ✅ |
+| `io/ingest.py` | Validates tables row by row; reads a cohort folder of parquet tables (the real-data entry point); loads into SQLite; all-or-nothing; refuses to mix synthetic and real rows | ✅ |
 | `io/qc.py` | Technical error of measurement and anthropometry flags; never edits or drops data | ✅ |
 | `io/deid.py` | Pseudonymous IDs, month-only DOB, identity map that can only be written outside the repo | ✅ |
 | `sim/growth_sim.py` | Preece–Baines height curves with an exactly known age at PHV; sitting height, leg length, mass; visit schedule; measurement error | ✅ |
@@ -137,6 +137,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `outputs/ablation/<run_id>/results.csv` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
+| `check_cohort.py` | First command on real data: validates a cohort folder against the schema and writes anthropometry QC flags and TEM per measurer | ✅ |
 | `draft_methods.py` | Regenerates `paper/methods_draft.md` (`make methods`) | ✅ |
 | `build_dashboard.py` | Builds the dashboard bundle from the synthetic cohort and saved growth posteriors (`make dashboard-data`) | ✅ |
 | `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |

@@ -210,3 +210,36 @@ def test_numpy_seed_sequence_is_stable_across_runs() -> None:
     assert first == make_rng(20261009, "athletes").random()
     assert 0.0 <= first < 1.0
     assert isinstance(np.float64(first), np.float64)
+
+
+# ----------------------------------------------------------------------------- cohort directory
+
+
+def test_cohort_directory_round_trip_and_validation(
+    cohort: SyntheticCohort, tmp_path: Path
+) -> None:
+    from youthtwin.sim.cohort import write_cohort
+
+    directory = write_cohort(cohort, tmp_path / "cohort")
+    tables = ingest.read_cohort_dir(directory)
+    assert set(tables) == set(ingest.COHORT_TABLES)
+    assert len(tables["athletes"]) == 300 and "athlete_truth" not in tables  # truth is not read
+    broken = tables["anthropometrics"].copy()
+    broken.loc[broken.index[0], "stature_1"] = 1.6  # metres
+    broken.to_parquet(directory / "anthropometrics.parquet", index=False)
+    with pytest.raises(ValueError, match="invalid row"):
+        ingest.read_cohort_dir(directory)
+    (directory / "injuries.parquet").unlink()
+    with pytest.raises(FileNotFoundError, match="injuries"):
+        ingest.read_cohort_dir(directory)
+
+
+def test_cohort_directory_refuses_mixed_data(cohort: SyntheticCohort, tmp_path: Path) -> None:
+    from youthtwin.sim.cohort import write_cohort
+
+    directory = write_cohort(cohort, tmp_path / "mixed")
+    athletes = pd.read_parquet(directory / "athletes.parquet")
+    athletes.loc[athletes.index[:5], "synthetic"] = False
+    athletes.to_parquet(directory / "athletes.parquet", index=False)
+    with pytest.raises(ValueError, match="mixes synthetic and real"):
+        ingest.read_cohort_dir(directory)

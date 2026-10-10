@@ -126,3 +126,39 @@ def load_tables(
                 [tuple(_to_sql_value(getattr(row, c)) for c in columns) for row in rows],
             )
     return report
+
+
+COHORT_TABLES = (
+    "athletes",
+    "anthropometrics",
+    "screening_sessions",
+    "task_features",
+    "exposure_weekly",
+    "injuries",
+)
+REQUIRED_COHORT_TABLES = ("athletes", "anthropometrics", "exposure_weekly", "injuries")
+
+
+def read_cohort_dir(directory: Path) -> dict[str, pd.DataFrame]:
+    """Read a cohort stored as one parquet file per table and validate it against the schema.
+
+    This is the entry point for real data: the same layout that ``make sim`` writes. Raises if a
+    required table is missing, if any row is invalid (listing the first problems), or if
+    synthetic and real rows are mixed.
+    """
+    absent = [t for t in REQUIRED_COHORT_TABLES if not (directory / f"{t}.parquet").is_file()]
+    if absent:
+        raise FileNotFoundError(f"{directory} is missing required tables: {absent}")
+    tables = {
+        name: pd.read_parquet(directory / f"{name}.parquet")
+        for name in COHORT_TABLES
+        if (directory / f"{name}.parquet").is_file()
+    }
+    report = validate_tables(tables)
+    if not report.ok:
+        shown = "; ".join(f"{e.table}[{e.row}] {e.message}" for e in report.errors[:5])
+        raise ValueError(f"{len(report.errors)} invalid row(s) in {directory}. First: {shown}")
+    flags = {bool(v) for table in tables.values() for v in table["synthetic"].unique()}
+    if len(flags) > 1:
+        raise ValueError("The cohort mixes synthetic and real rows")
+    return tables
