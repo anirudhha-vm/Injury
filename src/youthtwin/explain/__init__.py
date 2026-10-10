@@ -1,1 +1,1 @@
-"""L5 explanation: SHAP, integrated gradients, counterfactual sensitivity (M7)."""
+"""L5 explanation: SHAP, integrated gradients, counterfactual sensitivity."""

@@ -42,6 +42,12 @@ build/
 *.task
 *.onnx
 
+# --- Generated paper outputs: regenerate with `make paper-figs`, never edit or commit ---
+paper/figures/*
+paper/tables/*
+!paper/figures/.gitkeep
+!paper/tables/.gitkeep
+
 # --- Run outputs ---
 outputs/
 multirun/

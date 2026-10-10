@@ -1,19 +1,31 @@
-# Evaluation metrics (brief §6.7). Used from M7.
+# Evaluation settings (brief §6.7).
 primary_metric: time_dependent_auc_4wk
 metrics:
   - time_dependent_auc_4wk
+  - pr_auc
   - brier_score
   - calibration_intercept
   - calibration_slope
   - ici
   - ece
-  - pr_auc
-  - sensitivity_specificity_at_thresholds
-thresholds: null             # TODO(human): pre-specify risk thresholds in paper/preregistration.md
+thresholds: []               # TODO(human): pre-specify risk thresholds in paper/preregistration.md;
+                             # sensitivity/specificity are reported only for thresholds listed here
 decision_curve:
   references: [treat_all, treat_none]
+  threshold_range: [0.005, 0.15]   # ASSUMPTION: plausible range for "consider review" at these event rates
+  n_thresholds: 30
+calibration:
+  n_bins: 10
+  loess_frac: 0.75
 bootstrap:
   unit: athlete              # cluster bootstrap
   n_resamples: 1000
   ci_level: 0.95
-subgroups: [sex, maturity_stratum, sport, age_band]
+subgroups:
+  by: [sex, maturity_stratum, sport, age_band]
+  age_band_edges_years: [8, 11, 14, 19]   # ASSUMPTION
+  maturity_band_years: 1.0
+  min_events: 10             # ASSUMPTION: below this, subgroup metrics are not computed
+counterfactual:
+  exposure_columns: [hours_total, ewma_hours]
+  exposure_scale: 0.8        # the brief's example: exposure reduced by 20%

@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M5).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M7).
 
 ## Root
 
@@ -14,7 +14,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `README.md` | Entry point: status, quick start, pointers | ✅ |
 | `pyproject.toml` | Package metadata, dependencies, and ruff / mypy / pytest / coverage settings | ✅ |
 | `uv.lock` | Exact pinned versions of every dependency | ✅ |
-| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`; later `pipeline`, `paper-figs` | ✅ |
+| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`, `evaluate`, `ablation`, `paper-figs`, `pipeline` | ✅ |
 | `.pre-commit-config.yaml` | Blocks video files, `.env` files, and Supabase secret keys from being committed; runs ruff and the paper results guard | ✅ |
 | `.github/workflows/ci.yml` | CI: lint + tests (blocking), tracked-video check, human gates (visible, non-blocking) | ✅ |
 | `.gitignore` | Keeps raw video, data, secrets, and run outputs out of git | ✅ |
@@ -37,10 +37,11 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `features/person_period.yaml` | Exposure half-life, observed-velocity window, forbidden predictor names | ✅ |
 | `models/baselines.yaml` | Predictor sets and settings for the three baseline models | ✅ |
 | `models/hazard.yaml` | Prediction horizon, outcome groups, risk-set rules, hyperparameters of the logistic and boosted hazards, uncertainty options | ✅ |
-| `models/tcn_film.yaml`, `models/stgcn_film.yaml` | Encoder backbones and conditioning mode | ✅ (used M6) |
+| `models/tcn_film.yaml`, `models/stgcn_film.yaml` | Encoder sizes and parameter budget | ✅ |
+| `models/neural.yaml` | Neural hazard training, growth-vector and tabular columns, uncertainty draws, pre-training | ✅ |
 | `eval/splits.yaml` | Grouped / nested / temporal / leave-one-academy-out split definitions | ✅ (read by scripts from M7) |
-| `eval/metrics.yaml` | Primary metric, metric list, bootstrap settings, subgroups | ✅ (used M7) |
-| `eval/ablations.yaml` | The nine pre-registered ablation configurations (names only, never results) | ✅ (used M6) |
+| `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
+| `eval/ablations.yaml` | The nine pre-registered ablation configurations (names and switches only, never results) | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
 | `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
@@ -67,9 +68,10 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `io/qc.py` | Technical error of measurement and anthropometry flags; never edits or drops data | ✅ |
 | `io/deid.py` | Pseudonymous IDs, month-only DOB, identity map that can only be written outside the repo | ✅ |
 | `sim/growth_sim.py` | Preece–Baines height curves with an exactly known age at PHV; sitting height, leg length, mass; visit schedule; measurement error | ✅ |
-| `sim/movement_sim.py` | Session-level screening summary features with a per-athlete trait and a maturity shift | ✅ (minimal) |
+| `sim/movement_sim.py` | Session-level screening features with a per-athlete trait and maturity shift; synthetic drop-jump trials per session driven by the load proxy | ✅ |
 | `sim/injury_sim.py` | Weekly exposure and cause-specific injuries from a known hazard process with time-loss exclusion | ✅ |
 | `sim/skeleton_sim.py` | Stylised synthetic skeleton sequences (drop jump, single-leg squat) with exactly known angles and event frames, for testing the pose pipeline | ✅ |
+| `sim/truth.py` | True 4-week event probability per athlete-week of a synthetic cohort, for scoring only | ✅ |
 | `sim/cohort.py` | Assembles schema-shaped tables plus separate truth tables; tags everything synthetic; writes parquet | ✅ |
 | `pose/skeletons.py` | Landmark indices and canonical joint names for BlazePose-33 and Halpe-26; the only place raw indices appear | ✅ (Halpe-26 indices unverified) |
 | `pose/keypoints.py` | `KeypointSequence`: pixels (y down), per-frame timestamps, confidence; parquet + JSON storage with no reference to the video | ✅ |
@@ -91,12 +93,28 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `models/baselines.py` | Age-only, maturity + growth velocity, and screening-only logistic baselines | ✅ |
 | `models/risk/hazard_logit.py` | Elastic-net discrete-time logistic hazard with spline terms | ✅ |
 | `models/risk/hazard_xgb.py` | Gradient-boosted hazard with optional monotone constraints | ✅ |
-| `models/risk/hazard_neural.py`, `uncertainty.py` | Neural hazard head; uncertainty propagation | 🔲 (M6) |
-| `models/encoder/`, `models/pretrain/` | TCN / ST-GCN encoders, conditioning modes incl. FiLM, self-supervised pre-training | 🔲 (M6) |
+| `models/risk/hazard_neural.py` | Neural hazard (encoder + head), training with athlete-grouped early stopping, deep ensemble, train-only standardisation | ✅ |
+| `models/risk/uncertainty.py` | Risk distribution from growth-posterior draws and ensemble members; variance decomposition | ✅ (conformal intervals not implemented) |
+| `models/encoder/sequences.py` | Trial → (channels, time) array of angles and angular velocities; session stacking; channel scaler fitted on training athletes | ✅ |
+| `models/encoder/film.py` | FiLM layer (identity at initialisation) | ✅ |
+| `models/encoder/tcn.py` | Dilated residual 1D CNN encoder with optional FiLM | ✅ |
+| `models/encoder/stgcn.py` | Graph encoder on the hip-knee-ankle joint graph with optional FiLM | ✅ |
+| `models/encoder/conditioning.py` | The conditioning switch (`none`, `concat_input`, `late_fusion`, `film`) and attention pooling of trials into a session embedding | ✅ |
+| `models/pretrain/ssl.py` | Masked-segment pre-training on unlabelled trials; augmentations without left/right mirroring | ✅ |
+| `models/dataset.py` | Builds encoder sequences for a synthetic cohort through the real pose pipeline; athlete-week arrays; growth-posterior draws | ✅ |
 | `eval/splits.py` | Athlete-grouped stratified folds, nested folds, temporal hold-out, leave-one-academy-out; overlap check | ✅ |
 | `eval/collinearity.py` | Variance inflation factors and a warning for redundant model inputs | ✅ |
-| `eval/metrics.py`, `calibration.py`, `dca.py`, `bootstrap.py`, `subgroups.py` | Discrimination, calibration, decision curves, cluster bootstrap, subgroup tables | 🔲 (M7) |
-| `explain/` | SHAP, integrated gradients, counterfactual sensitivity | 🔲 (M7) |
+| `eval/metrics.py` | AUC (time-dependent at the horizon), PR-AUC, Brier score, sensitivity/specificity at pre-specified thresholds | ✅ |
+| `eval/ablation.py` | Runs the nine pre-registered configurations with athlete-grouped cross-validation; tidy results with run IDs; optional scoring against known true risk | ✅ |
+| `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
+| `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
+| `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
+| `eval/subgroups.py` | Age bands and maturity strata; metrics per subgroup with a minimum-events rule | ✅ |
+| `eval/predictions.py` | Out-of-fold predictions table: the single input to every metric, table and figure | ✅ |
+| `eval/report.py` | Builds the performance, difference, decision-curve, calibration and subgroup tables from predictions | ✅ |
+| `explain/shap_utils.py` | SHAP on the fitted tabular models; additivity; values summed back to original inputs | ✅ |
+| `explain/integrated_gradients.py` | Integrated-gradients attributions for networks; pooling over a session's trials | ✅ |
+| `explain/counterfactual.py` | What-if changes to inputs, labelled as model sensitivity, not causal effect | ✅ |
 | `recommend/` | Decision-support text rules with an evidence library | 🔲 (M8) |
 
 Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their purpose and milestone.
@@ -111,6 +129,9 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `sim_study_growth.py` | Growth-twin simulation study on the synthetic cohort: coverage and error vs truth and vs Moore; writes scores, summary, posteriors, watermarked figure to `outputs/` (`make sim-study-growth`) | ✅ |
 | `run_pose.py` | Local videos + manifest → keypoint files, task-feature table and exclusion log | ⚠️ written, never run on real video |
 | `validate_markerless.py` | Paired markerless/mocap table → agreement tables and figures in `outputs/validation/` | ✅ (run on made-up pairs only) |
+| `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `outputs/ablation/<run_id>/results.csv` | ✅ |
+| `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
+| `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
 
 ## `tests/`
@@ -145,7 +166,12 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_growth_state_collinearity.py` | Growth inputs that are copies of one number (v2) | ✅ |
 | `test_person_period.py` | Wrong outcome window, risk set, carry-forward or censoring; exposure using future weeks; load-proxy arithmetic | ✅ |
 | `test_hazard_models.py` | Models that do not fit or predict; unfitted estimator exposed for explanation (v2); simulated effect directions not recovered | ✅ |
-| Remaining v2 regression tests in brief §3 (SHAP run, API contract) | The specific v2 defects | 🔲 (M7) |
+| `test_encoder.py` | Wrong shapes or oversize models; conditioning that leaks into `none` or does nothing in the others; padding affecting pooling; normalisation using held-out athletes; mirrored augmentations | ✅ |
+| `test_neural_hazard.py` | Training that is not reproducible or reads held-out rows; growth uncertainty not reaching risk; wrong draw assembly; ablation grid not running end to end | ✅ |
+| `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
+| `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
+| `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |
+| `test_evaluation_report.py` | Tables that cannot be traced; figures or tables in `paper/` without provenance | ✅ |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
 
@@ -154,14 +180,14 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M5 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M7 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
 | `paper/preregistration.md` | Hypotheses, primary outcome/metric, ablation set — template to register before real data | ✅ template |
 | `paper/tripod_ai_checklist.md` | TRIPOD+AI item → where it is satisfied | ✅ working copy |
 | `paper/paperA_outline.md`, `paperB_outline.md` | Paper scaffolds | 🔲 (M9) |
-| `paper/figures/`, `paper/tables/` | Generated only by `scripts/make_figures.py`, each with a provenance sidecar | ✅ empty |
+| `paper/figures/`, `paper/tables/` | Generated only by `scripts/make_figures.py`, each file with a provenance sidecar; git-ignored (regenerate, never edit) | ✅ |
 | `data/README.md`, `data/schema/README.md` | What lives where, privacy rules | ✅ |
 | `data/schema/schema.sql` | SQL DDL for the nine tables | ✅ |
 | `apps/twin_dashboard/` | Streamlit research dashboard | 🔲 (M8) |

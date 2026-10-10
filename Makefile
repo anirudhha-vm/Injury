@@ -1,4 +1,4 @@
-.PHONY: setup test test-slow lint gate sim sim-study-growth pipeline paper-figs todo
+.PHONY: setup test test-slow lint gate sim sim-study-growth evaluate ablation pipeline paper-figs todo
 
 # A system PYTHONPATH (e.g. from a ROS install) leaks foreign pytest plugins into the venv.
 unexport PYTHONPATH
@@ -31,8 +31,14 @@ sim:  ## generate the synthetic cohort into data/synthetic/ (flagged synthetic=T
 sim-study-growth:  ## simulation study for the growth twin (SYNTHETIC; tens of minutes)
 	uv run python scripts/sim_study_growth.py
 
-pipeline:  ## end-to-end pipeline on synthetic data (M5-M6)
-	@echo "make pipeline: not implemented until milestone M6"; exit 1
+evaluate:  ## out-of-fold evaluation of the tabular models (SYNTHETIC)
+	uv run python scripts/evaluate.py
 
-paper-figs:  ## regenerate every figure/table in paper/ (M7)
-	@echo "make paper-figs: not implemented until milestone M7"; exit 1
+ablation:  ## the nine-configuration ablation grid (SYNTHETIC; slow)
+	uv run python scripts/ablation.py
+
+pipeline:  ## synthetic cohort -> evaluation -> paper figures and tables
+	$(MAKE) sim evaluate paper-figs
+
+paper-figs:  ## regenerate every figure and table in paper/ from the latest runs
+	uv run python scripts/make_figures.py

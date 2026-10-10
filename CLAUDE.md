@@ -18,7 +18,10 @@ Current milestone status: see `docs/plans/` (`Mx.md` = plan, `Mx_done.md` = comp
 | `make sim` | generate the synthetic cohort into `data/synthetic/` |
 | `make test-slow` | tests that run the MCMC sampler |
 | `make sim-study-growth` | growth-twin simulation study on synthetic data (about 40 minutes) |
-| `make pipeline` / `make paper-figs` | arrive in M6 / M7 |
+| `make evaluate` | out-of-fold evaluation of the tabular risk models on synthetic data |
+| `make ablation` | the nine-configuration ablation grid (slow) |
+| `make paper-figs` | regenerate every figure and table under `paper/` from the latest runs |
+| `make pipeline` | `sim` → `evaluate` → `paper-figs` |
 
 Run `make test lint` before every commit.
 

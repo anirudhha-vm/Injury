@@ -20,9 +20,9 @@ Status: `todo` · `partial` · `done`. "Where" points to the code/config/doc tha
 | 9 | Methods | Predictors: definition, timing, measurement | partial | `configs/features/`, `configs/growth/` |
 | 10 | Methods | Sample size justification | todo | `scripts/sample_size.py` |
 | 11 | Methods | Missing data handling | todo | M5 |
-| 12 | Methods | Analytical methods: model type, tuning, validation, performance measures | partial | `configs/models/`, `configs/eval/` |
+| 12 | Methods | Analytical methods: model type, tuning, validation, performance measures | partial | `src/youthtwin/models/`, `src/youthtwin/eval/` (tuning loop not yet written) |
 | 13 | Methods | Class imbalance handling | partial | `configs/models/hazard.yaml` |
-| 14 | Methods | Fairness approaches | partial | `configs/eval/metrics.yaml` (subgroups) |
+| 14 | Methods | Fairness approaches | partial | `src/youthtwin/eval/subgroups.py` |
 | 15 | Methods | Model output and thresholds | todo | M5–M7 |
 | 16 | Methods | Differences between development and evaluation data | todo | M7 |
 | 17 | Methods | Ethical approval and consent | todo | `docs/ethics/` (DRAFT) |
@@ -31,7 +31,7 @@ Status: `todo` · `partial` · `done`. "Where" points to the code/config/doc tha
 | 20 | Results | Participant flow and characteristics | todo | M7 |
 | 21 | Results | Model development: participants and events per analysis | todo | M7 |
 | 22 | Results | Full model specification | todo | M7 |
-| 23 | Results | Model performance with CIs, including subgroups | todo | `src/youthtwin/eval/` (M7) |
+| 23 | Results | Model performance with CIs, including subgroups | partial | `scripts/evaluate.py`, `scripts/make_figures.py` (synthetic runs only so far) |
 | 24 | Results | Model updating | todo | M7 |
 | 25 | Discussion | Interpretation, including fairness | todo | M9 |
 | 26 | Discussion | Limitations | todo | M9 |

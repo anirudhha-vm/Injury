@@ -466,3 +466,121 @@ launched from clean commit `bb26d5a` and its provenance record says so.
 **Process note.** An unanchored `.gitignore` rule for model weights (`models/`) also matched
 `src/youthtwin/models` and `configs/models`. One push went out without four new source files
 and those files were skipped by the linter. Fixed by anchoring the rule to the repository root.
+
+---
+
+## M6 — conditioned encoder, neural hazard, uncertainty propagation (2026-10-10)
+
+### Decisions
+
+**D-070 · Encoder inputs are angle curves, not raw keypoints.**
+Sixteen channels: three sagittal angles and the frontal-plane knee angle per side, each with its
+angular velocity, over 101 time-normalised points. Why: angles are independent of camera
+distance, image size and body size, so the encoder cannot learn those; the brief's option of
+normalised 2D coordinates is left for later.
+
+**D-071 · All four conditioning modes give the same embedding size and share everything
+downstream.** Growth reaches the network only through the conditioning mode (the head gets the
+embedding and non-growth inputs). Why: otherwise the ablation would compare different amounts
+of growth information, not different ways of using it.
+
+**D-072 · FiLM starts as the identity.** Its generator's last layer is initialised to zero, so a
+FiLM network begins exactly equal to the unconditioned one (tested) and pre-trained weights load
+into it unchanged.
+
+**D-073 · ST-GCN runs on a six-node joint graph of angle signals.** Hip, knee and ankle per
+side; each node carries its own joint's signals. A full-body keypoint graph is possible once
+raw coordinates are used.
+
+**D-074 · Pre-training is masked-segment reconstruction; no left/right mirroring.**
+Mirroring would swap limb-specific channels. Pre-training uses training athletes' trials only
+and is cached per fold so every configuration starts from the same weights.
+
+**D-075 · CPU-only PyTorch.** The largest model has about 53k parameters. The CUDA wheels add
+gigabytes; a GPU build can be installed by hand.
+
+**D-076 · Reported risk is the mean over growth draws and ensemble members.**
+For a non-linear model this differs from the risk at the mean growth state (tested), which is
+the reason to propagate rather than plug in. Variance is split into a growth part and a model
+part by the law of total variance.
+
+**D-077 · One growth-posterior draw gives an athlete's whole trajectory.**
+Draws are taken per athlete, not per athlete-week, so a draw's maturity offsets at different
+weeks stay consistent (one year apart for dates one year apart).
+
+**D-078 · Split-conformal intervals are not implemented.**
+Listed as optional. A conformal interval for a probability needs a calibration construction
+that is a design choice for the team.
+
+**D-079 · Risk intervals are scored against the known true risk on synthetic data.**
+`sim/truth.py` computes each athlete-week's true 4-week event probability from the generator's
+hazards. This is the only place "calibrated intervals" can be checked; the truth tables are
+still never model inputs.
+
+**D-080 · Synthetic trials are tied to the tabular load proxy by an assumed mapping.**
+A higher proxy gives a stiffer landing. This puts the same information in the sequence as in
+the tabular feature, so the encoder can at best match that feature on this cohort. It is a
+property I chose, not a finding.
+
+### Stated limits of what M6 can show
+With about 55 growth-related injuries in the default synthetic cohort, differences between
+conditioning modes are within noise, and any advantage for one mode partly reflects how the
+simulation was built. M6 demonstrates that the machinery runs and behaves as designed on
+constructed examples; it is not evidence for hypothesis H3.
+
+### Fix
+`SitarPosterior.load` now accepts files saved before the cohort-prior fields were added; the
+first full ablation run failed on exactly that.
+
+---
+
+## M7 — evaluation suite, explanation, figures (2026-10-10)
+
+### Decisions
+
+**D-081 · One predictions table feeds everything.**
+`eval/predictions.py` produces out-of-fold predictions (each athlete predicted by a model that
+never saw them); every metric, table and figure is computed from that table alone.
+
+**D-082 · "Time-dependent AUC at 4 weeks" is the AUC of the 4-week outcome on the risk set.**
+With athlete-weeks at risk as rows, a fixed horizon, and rows with unobservable windows already
+removed, the cumulative/dynamic AUC reduces to this. Stated in the function's docstring so the
+methods text can say exactly what was computed.
+
+**D-083 · All uncertainty comes from resampling athletes.**
+Rows are not independent (repeated athletes, overlapping windows). A test shows the athlete-level
+interval is more than 2.5 times wider than a row-level one on such data. Model comparisons use
+the paired version (both models on the same resampled athletes).
+
+**D-084 · Calibration slope and intercept fitted by Newton's method in-house.**
+A few lines, no extra dependency for the core measure, and checked against scikit-learn. ICI
+uses the standard loess smoother from statsmodels.
+
+**D-085 · Sensitivity and specificity are reported only at thresholds listed in the config.**
+None are listed: thresholds are a pre-registration decision (`TODO(human)`). Reporting at a
+threshold chosen after seeing results would be exactly the flexibility pre-registration removes.
+
+**D-086 · Subgroups with fewer than the minimum number of events are listed without metrics.**
+Counts and a note are kept so that the gap is visible.
+
+**D-087 · What-if output carries its own disclaimer.**
+The result object and its summary both state that it is model sensitivity, not a causal effect.
+
+**D-088 · Generated files under `paper/figures` and `paper/tables` are git-ignored.**
+They are regenerated by one command and currently come from synthetic runs. Keeping them out of
+git prevents a stale or synthetic table from being mistaken for a result; the results guard
+still checks that anything present has a provenance sidecar.
+
+### Findings
+- **Percentile intervals for ICI and ECE can exclude the point estimate.** Absolute-error
+  measures are inflated by resampling noise. Documented in `eval/report.py`; a test that assumed
+  otherwise was wrong and was corrected.
+- **Synthetic cohort is underpowered for prediction.** With 300 athletes and about 55
+  growth-related injuries, out-of-fold AUCs of all tabular models are between 0.50 and 0.56
+  with intervals spanning 0.5, calibration slopes are near 0, and no model's decision curve
+  beats both reference strategies (run with 100 bootstrap resamples; indicative only). Since
+  the simulated effects are real, this is a sample-size signal for the planned cohort, to be
+  taken up with the Riley sample-size calculation.
+
+### Corrections to my own first drafts
+A hand-worked Brier score in a test was mis-added (the code was right).
