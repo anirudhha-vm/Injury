@@ -3,7 +3,7 @@
 Research code for an uncertainty-aware, maturity-conditioned digital twin for prospective
 prediction of growth-related injury in youth athletes (8–18 y) from smartphone video.
 
-**Status:** M0-M3 built on synthetic data. The pose pipeline has not been run on real video (no test clips yet). No scientific results exist. Research code, not a medical device;
+**Status:** M0-M4 built on synthetic data. The pose pipeline has not been run on real video (no test clips yet). No scientific results exist. Research code, not a medical device;
 outputs are decision support only.
 
 ## Quick start

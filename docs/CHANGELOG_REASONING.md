@@ -339,3 +339,34 @@ Halpe-26 landmark indices (from memory, flagged `TODO(human)`).
   above cut-off is 0.115, not 0.069. The filter was right and the expectation was wrong.
 - Landmark tests were first written inside the angle-convention test file; moved to
   `test_landmark_indices.py`, the name the brief specifies.
+
+---
+
+## M4 — validation module for Paper A (2026-10-10)
+
+**D-048 · Differences are always markerless minus mocap.**
+One fixed direction everywhere, stated in the module docstring, so a positive bias always means
+the phone reads high.
+
+**D-049 · The table reports bias, limits, RMSE and both ICCs together.**
+Why: each answers a different question. A test shows ICC(3,1) is unchanged by a 12-degree
+constant offset while ICC(2,1) falls; reporting one ICC alone can hide a large bias.
+
+**D-050 · Strata with too few pairs stay in the table with a note.**
+Why: a silently missing maturity stratum would read as "no problem there".
+
+**D-051 · pingouin is a development-only dependency used as the reference for ICC.**
+The brief names it. Its current version labels the two-way ICCs `ICC(A,1)` and `ICC(C,1)`; the
+test maps both old and new names.
+
+**D-052 · Markers-to-joint-angles is deliberately not implemented.**
+It depends on the lab's marker set and model, which is a human decision not yet made. Writing a
+generic version now would produce angles defined differently from the lab's own.
+
+**D-053 · TRC is read natively; C3D through an optional package.**
+TRC is plain text and needed no dependency; the C3D reader is written but has never run.
+
+**Corrections to my own first drafts:** two test expectations were wrong, not the code — an
+arithmetic slip in a hand-worked standard error, and an assumption that the Bland-Altman slope
+is zero without proportional bias (unequal error variances alone produce a small slope; now
+documented in the module and tested at its predicted size).

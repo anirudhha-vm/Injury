@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M3).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M4).
 
 ## Root
 
@@ -42,6 +42,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations (names only, never results) | ✅ (used M6) |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
+| `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
 
 ## `src/youthtwin/` — the package
 
@@ -79,7 +80,9 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `pose/estimators/base.py` | `PoseEstimator` interface, video frame reader, optional-dependency loader | ✅ (frame reader unverified) |
 | `pose/estimators/mediapipe.py` | MediaPipe Tasks `PoseLandmarker` wrapper | ⚠️ written, never run |
 | `pose/estimators/rtmpose.py` | RTMPose (body with feet) wrapper via rtmlib | ⚠️ written, never run |
-| `validation/` | Markerless vs mocap agreement statistics (Paper A) | 🔲 (M4) |
+| `validation/agreement.py` | Markerless-vs-mocap agreement: RMSE, MAE, Bland-Altman with confidence intervals and proportional bias, ICC(2,1), ICC(3,1), stratified agreement table | ✅ |
+| `validation/mocap_io.py` | TRC reader/writer, optional C3D reader, time alignment of mocap and markerless curves | ✅ (C3D path never run; markers-to-angles not implemented) |
+| `validation/plots.py` | Bland-Altman grid, RMSE by maturity stratum, curve overlay | ✅ |
 | `features/` | Mechanistic load proxies, exposure features, person-period (athlete-week) table | 🔲 (M5) |
 | `models/risk/`, `models/baselines.py` | Cause-specific discrete-time hazard models, baselines, uncertainty propagation | 🔲 (M5–M6) |
 | `models/encoder/`, `models/pretrain/` | TCN / ST-GCN encoders, conditioning modes incl. FiLM, self-supervised pre-training | 🔲 (M6) |
@@ -98,6 +101,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `fit_growth.py` | Fits the growth twin to a cohort directory, or updates existing posteriors with new measurements | ✅ |
 | `sim_study_growth.py` | Growth-twin simulation study on the synthetic cohort: coverage and error vs truth and vs Moore; writes scores, summary, posteriors, watermarked figure to `outputs/` (`make sim-study-growth`) | ✅ |
 | `run_pose.py` | Local videos + manifest → keypoint files, task-feature table and exclusion log | ⚠️ written, never run on real video |
+| `validate_markerless.py` | Paired markerless/mocap table → agreement tables and figures in `outputs/validation/` | ✅ (run on made-up pairs only) |
 | `sample_size.py`, `run_pose.py`, `train_*.py`, `evaluate.py`, `ablation.py`, `make_figures.py` | One CLI per pipeline stage | 🔲 (M1–M7) |
 
 ## `tests/`
@@ -126,6 +130,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_events.py` | Events off by more than a few frames; invented events when the clip is incomplete | ✅ |
 | `test_event_asymmetry.py` | Frame-wise left/right asymmetry, or asymmetry inside a single-leg trial (v2) | ✅ |
 | `test_pose_pipeline.py` | Features that miss the known truth; frame-rate-dependent velocity; silently dropped trials; keypoint files that point at video | ✅ |
+| `test_agreement.py` | Wrong Bland-Altman or ICC arithmetic (checked by hand and against pingouin); dropped thin strata; TRC parsing; time-alignment errors | ✅ |
 | Remaining v2 regression tests in brief §3 (scaler scope, leakage, growth-state collinearity, SHAP, API contract) | The specific v2 defects | 🔲 (M5–M7) |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
@@ -135,7 +140,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M3 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M4 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
