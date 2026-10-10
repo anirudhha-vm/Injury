@@ -8,6 +8,12 @@
   is biased toward the mean (see ``maturity_equations``); the prior SD lets the longitudinal
   data pull each athlete away from it.
 - ``gamma_i`` (intensity, log scale) ~ Normal(0, sigma_gamma); optional.
+- Optional velocity deviation ``delta_i * (age - mean_age_i)``, ``delta_i`` ~ Normal(0,
+  sigma_delta): lets an athlete grow a little faster or slower than the shared shape implies.
+  Without it, any mismatch between an athlete's curve and the shared shape is forced into the
+  timing estimate, which made intervals too narrow in the first simulation study.
+- Optional cohort-level ``timing_offset`` added to every Moore prior centre, and a learned prior
+  SD: the model estimates how biased and how imprecise Moore is in *this* cohort.
 - One model per sex.
 
 Why the per-athlete effects are integrated out rather than sampled
@@ -19,7 +25,7 @@ chains that disagree (observed during development; see docs/CHANGELOG_REASONING.
 
 Instead:
 
-1. ``alpha_i`` is integrated out in closed form (the model is linear-Gaussian in it).
+1. ``alpha_i`` and ``delta_i`` are integrated out in closed form (linear-Gaussian).
 2. ``beta_i`` and ``gamma_i`` are integrated out numerically on a fixed grid.
 3. NUTS samples only the shared parameters (mean curve, SDs), about a dozen dimensions.
 4. Per-athlete effects are then drawn exactly from their conditional distribution given each
@@ -82,6 +88,12 @@ class GrowthData:
     @property
     def n_per_athlete(self) -> IntArray:
         return np.bincount(self.athlete_index, minlength=self.n_athletes).astype(np.int64)
+
+    @property
+    def mean_age(self) -> FloatArray:
+        """Mean age at measurement, per athlete (pivot of the velocity deviation)."""
+        totals = np.bincount(self.athlete_index, weights=self.age, minlength=self.n_athletes)
+        return np.asarray(totals / self.n_per_athlete, dtype=np.float64)
 
     def padded(self) -> tuple[FloatArray, FloatArray, FloatArray]:
         """``(age, stature, mask)`` as (n_athletes, max_visits) arrays; mask is 1 where real."""
@@ -199,32 +211,46 @@ def _grid_log_weights(
     sigma_alpha: Any,
     sigma_beta: Any,
     sigma_gamma: Any,
-) -> tuple[Any, Any]:
+    sigma_delta: Any,
+    timing_offset: Any,
+) -> tuple[Any, Any, Any]:
     """Log posterior weight of every (timing, intensity) grid cell for every athlete.
 
-    Returns ``(log_weight, residual_sum)``, both shaped (athletes, timing, intensity), with
-    ``alpha_i`` integrated out. ``residual_sum`` is what the conditional draw of ``alpha_i``
-    needs. Runs on NumPy or PyTensor (``xp``); a leading draw dimension is not supported.
+    Returns ``(log_weight, residual_sum, residual_slope_sum)``, each shaped (athletes, timing,
+    intensity), with the two linear effects integrated out: size ``alpha_i`` and the velocity
+    deviation ``delta_i * (age - mean_age_i)``. The two sums are what their conditional draws
+    need. Runs on NumPy or PyTensor (``xp``); a leading draw dimension is not supported.
+
+    Because ages are centred on each athlete's mean, the two effects are orthogonal and the
+    marginal covariance ``var I + var_alpha 11' + var_delta cc'`` factorises term by term.
     """
-    beta = prior_aphv[:, None] + sigma_beta * grids.timing[None, :]  # (n, B)
+    beta = prior_aphv[:, None] + timing_offset + sigma_beta * grids.timing[None, :]  # (n, B)
     stretch = xp.exp(sigma_gamma * grids.intensity)  # (G,)
     z = (age[:, :, None, None] - beta[:, None, :, None]) * stretch[None, None, None, :]
     fitted = intercept + splines.spline_value(z, linear, coefs, knots, xp=xp)
     residual = (stature[:, :, None, None] - fitted) * mask[:, :, None, None]
+    centred = (age - (age * mask).sum(axis=1, keepdims=True) / n_visits[:, None]) * mask
     total = residual.sum(axis=1)
     total_sq = (residual**2).sum(axis=1)
+    slope_total = (residual * centred[:, :, None, None]).sum(axis=1)
     n = n_visits[:, None, None]
-    var, var_alpha = sigma**2, sigma_alpha**2
-    # y_i - mu_i ~ Normal(0, var * I + var_alpha * 11'), written out for compound symmetry.
-    quadratic = total_sq / var - var_alpha * total**2 / (var * (var + n * var_alpha))
-    log_det = (n - 1.0) * xp.log(var) + xp.log(var + n * var_alpha)
+    spread = (centred**2).sum(axis=1)[:, None, None]
+    var, var_alpha, var_delta = sigma**2, sigma_alpha**2, sigma_delta**2
+    quadratic = (
+        total_sq / var
+        - var_alpha * total**2 / (var * (var + n * var_alpha))
+        - var_delta * slope_total**2 / (var * (var + spread * var_delta))
+    )
+    log_det = (
+        (n - 2.0) * xp.log(var) + xp.log(var + n * var_alpha) + xp.log(var + spread * var_delta)
+    )
     log_likelihood = -0.5 * (quadratic + log_det + n * _LOG_2PI)
     log_weight = (
         log_likelihood
         + grids.timing_log_weight[None, :, None]
         + grids.intensity_log_weight[None, None, :]
     )
-    return log_weight, total
+    return log_weight, total, slope_total
 
 
 # --------------------------------------------------------------------------- model
@@ -251,7 +277,24 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             sigma_gamma: Any = pm.HalfNormal("sigma_gamma", sigma=config["intensity"]["sd_prior"])
         else:
             sigma_gamma = 0.0
-        log_weight, _ = _grid_log_weights(
+        deviation = config["velocity_deviation"]
+        sigma_delta: Any = (
+            pm.HalfNormal("sigma_delta", sigma=deviation["sd_prior"])
+            if deviation["enabled"]
+            else 0.0
+        )
+        timing = config["timing_prior"]
+        timing_offset: Any = (
+            pm.Normal("timing_offset", mu=0.0, sigma=timing["offset_sd_years"])
+            if timing["learn_offset"]
+            else 0.0
+        )
+        sigma_beta: Any = (
+            pm.HalfNormal("sigma_beta", sigma=timing["sd_years"])
+            if timing["learn_sd"]
+            else float(timing["sd_years"])
+        )
+        log_weight, _, _ = _grid_log_weights(
             pt,
             age=age,
             stature=stature,
@@ -265,8 +308,10 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             coefs=coefs,
             sigma=sigma,
             sigma_alpha=sigma_alpha,
-            sigma_beta=float(config["timing_prior"]["sd_years"]),
+            sigma_beta=sigma_beta,
             sigma_gamma=sigma_gamma,
+            sigma_delta=sigma_delta,
+            timing_offset=timing_offset,
         )
         flat = log_weight.reshape((data.n_athletes, -1))
         pm.Potential("marginal_likelihood", pt.logsumexp(flat, axis=1).sum())
@@ -335,14 +380,22 @@ class SharedDraws:
     sigma: FloatArray
     sigma_alpha: FloatArray
     sigma_gamma: FloatArray
+    sigma_delta: FloatArray
+    timing_offset: FloatArray
+    sigma_beta: FloatArray
 
     @property
     def n_draws(self) -> int:
         return int(self.sigma.size)
 
 
-def shared_draws(idata: InferenceData, n_draws: int, seed: int) -> SharedDraws:
-    """Stack chains and keep a random subset of ``n_draws`` draws."""
+def shared_draws(
+    idata: InferenceData, n_draws: int, seed: int, config: Mapping[str, Any]
+) -> SharedDraws:
+    """Stack chains and keep a random subset of ``n_draws`` draws.
+
+    Parameters that were switched off in ``config`` are filled with their fixed values.
+    """
     stacked = idata.posterior.stack(sample=("chain", "draw"))
     total = int(stacked.sizes["sample"])
     keep = np.sort(np.random.default_rng(seed).choice(total, min(n_draws, total), replace=False))
@@ -352,36 +405,46 @@ def shared_draws(idata: InferenceData, n_draws: int, seed: int) -> SharedDraws:
         return values[keep] if values.ndim == 1 else values.T[keep]
 
     sigma = draws("sigma")
+
+    def optional(name: str, fixed: float) -> FloatArray:
+        return draws(name) if name in stacked else np.full_like(sigma, fixed)
+
     return SharedDraws(
         intercept=draws("intercept"),
         linear=draws("linear"),
         coefs=draws("coefs"),
         sigma=sigma,
         sigma_alpha=draws("sigma_alpha"),
-        sigma_gamma=draws("sigma_gamma") if "sigma_gamma" in stacked else np.zeros_like(sigma),
+        sigma_gamma=optional("sigma_gamma", 0.0),
+        sigma_delta=optional("sigma_delta", 0.0),
+        timing_offset=optional("timing_offset", 0.0),
+        sigma_beta=optional("sigma_beta", float(config["timing_prior"]["sd_years"])),
     )
 
 
 def draw_athlete_effects(
     shared: SharedDraws, data: GrowthData, config: Mapping[str, Any], *, seed: int
 ) -> SitarPosterior:
-    """Draw (alpha, beta, gamma) for every athlete, exactly, given each shared draw.
+    """Draw (alpha, beta, gamma, delta) for every athlete, exactly, given each shared draw.
 
     For each shared draw: pick a (timing, intensity) grid cell with probability proportional to
-    its posterior weight, jitter timing uniformly within the cell, then draw ``alpha_i`` from
-    its Normal conditional. Two-peaked timing posteriors come out two-peaked.
+    its posterior weight, jitter timing uniformly within the cell, then draw ``alpha_i``
+    and ``delta_i`` from their independent Normal conditionals. Two-peaked timing posteriors
+    come out two-peaked.
     """
     knots = splines.check_knots(config["spline"]["knots_years"])
     grids = effect_grids(config)
-    sigma_beta = float(config["timing_prior"]["sd_years"])
     age, stature, mask = data.padded()
     n_visits = data.n_per_athlete.astype(np.float64)
+    mean_age = data.mean_age
+    spread = (((age - mean_age[:, None]) * mask) ** 2).sum(axis=1)
     rng = np.random.default_rng(seed)
     n, n_timing, n_intensity = data.n_athletes, grids.timing.size, grids.intensity.size
-    alpha, beta, gamma = (np.empty((shared.n_draws, n)) for _ in range(3))
+    alpha, beta, gamma, delta = (np.empty((shared.n_draws, n)) for _ in range(4))
     rows = np.arange(n)
     for s in range(shared.n_draws):
-        log_weight, residual_sum = _grid_log_weights(
+        sigma_beta = shared.sigma_beta[s]
+        log_weight, residual_sum, slope_sum = _grid_log_weights(
             np,
             age=age,
             stature=stature,
@@ -397,6 +460,8 @@ def draw_athlete_effects(
             sigma_alpha=shared.sigma_alpha[s],
             sigma_beta=sigma_beta,
             sigma_gamma=shared.sigma_gamma[s],
+            sigma_delta=shared.sigma_delta[s],
+            timing_offset=shared.timing_offset[s],
         )
         flat = log_weight.reshape(n, -1)
         probability = np.exp(flat - flat.max(axis=1, keepdims=True))
@@ -405,12 +470,23 @@ def draw_athlete_effects(
         cell = np.minimum(cell, n_timing * n_intensity - 1)
         timing_cell, intensity_cell = np.divmod(cell, n_intensity)
         jitter = rng.uniform(-0.5, 0.5, n) * grids.timing_step
-        beta[s] = data.prior_aphv + sigma_beta * (grids.timing[timing_cell] + jitter)
+        centre = data.prior_aphv + shared.timing_offset[s]
+        beta[s] = centre + sigma_beta * (grids.timing[timing_cell] + jitter)
         gamma[s] = shared.sigma_gamma[s] * grids.intensity[intensity_cell]
         var, var_alpha = shared.sigma[s] ** 2, shared.sigma_alpha[s] ** 2
-        conditional_var = 1.0 / (n_visits / var + 1.0 / var_alpha)
-        conditional_mean = conditional_var * residual_sum[rows, timing_cell, intensity_cell] / var
-        alpha[s] = conditional_mean + np.sqrt(conditional_var) * rng.standard_normal(n)
+        picked = (rows, timing_cell, intensity_cell)
+        alpha_var = 1.0 / (n_visits / var + 1.0 / var_alpha)
+        alpha[s] = alpha_var * residual_sum[picked] / var + np.sqrt(
+            alpha_var
+        ) * rng.standard_normal(n)
+        var_delta = shared.sigma_delta[s] ** 2
+        if var_delta > 0:
+            delta_var = 1.0 / (spread / var + 1.0 / var_delta)
+            delta[s] = delta_var * slope_sum[picked] / var + np.sqrt(
+                delta_var
+            ) * rng.standard_normal(n)
+        else:
+            delta[s] = 0.0
     return SitarPosterior(
         athlete_ids=data.athlete_ids,
         knots=knots,
@@ -423,6 +499,11 @@ def draw_athlete_effects(
         sigma=shared.sigma,
         sigma_alpha=shared.sigma_alpha,
         sigma_gamma=shared.sigma_gamma,
+        delta=delta,
+        sigma_delta=shared.sigma_delta,
+        timing_offset=shared.timing_offset,
+        sigma_beta=shared.sigma_beta,
+        mean_age=mean_age,
         sex=data.sex,
         synthetic=data.synthetic,
     )
@@ -433,7 +514,8 @@ def extract_posterior(
 ) -> SitarPosterior:
     """Full posterior (shared draws + athlete effects) from a fit."""
     n_draws = int(config["growth_state"]["n_posterior_draws"])
-    return draw_athlete_effects(shared_draws(idata, n_draws, seed), data, config, seed=seed)
+    shared = shared_draws(idata, n_draws, seed, config)
+    return draw_athlete_effects(shared, data, config, seed=seed)
 
 
 def update(
@@ -457,13 +539,25 @@ def update(
         sigma=previous.sigma,
         sigma_alpha=previous.sigma_alpha,
         sigma_gamma=previous.sigma_gamma,
+        sigma_delta=previous.sigma_delta,
+        timing_offset=previous.timing_offset,
+        sigma_beta=previous.sigma_beta,
     )
     return draw_athlete_effects(shared, data, config, seed=seed)
 
 
 def diagnostics(idata: InferenceData) -> dict[str, float]:
     """Convergence summary for the sampled parameters: worst R-hat, smallest ESS, divergences."""
-    names = [n for n in ("theta", "sigma", "sigma_alpha", "sigma_gamma") if n in idata.posterior]
+    sampled = (
+        "theta",
+        "sigma",
+        "sigma_alpha",
+        "sigma_gamma",
+        "sigma_delta",
+        "timing_offset",
+        "sigma_beta",
+    )
+    names = [n for n in sampled if n in idata.posterior]
     summary = az.summary(idata, var_names=names, kind="diagnostics")
     stats = getattr(idata, "sample_stats", None)
     divergences = int(stats["diverging"].sum()) if stats is not None and "diverging" in stats else 0

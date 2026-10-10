@@ -8,8 +8,10 @@ spline:
   knots_years: [-6.0, -3.0, -1.5, -0.5, 0.5, 1.5, 3.0, 5.0]
 timing_prior:
   centre: moore2015_aphv     # per-athlete prior mean for beta_i
-  sd_years: 1.0              # brief default
-  learn_sd: false
+  sd_years: 1.0              # brief default; scale of the half-normal prior when learn_sd
+  learn_sd: true             # estimate how imprecise the Moore prior is in this cohort
+  learn_offset: true         # estimate a cohort-level bias of the Moore prior
+  offset_sd_years: 0.5       # ASSUMPTION
 priors:                      # ASSUMPTION
   curve_sd_cm: 30.0          # each orthogonal direction of the mean curve
   size_sd_cm: 8.0
@@ -17,6 +19,9 @@ priors:                      # ASSUMPTION
 intensity:                   # per-athlete growth-spurt intensity (gamma_i)
   enabled: true
   sd_prior: 0.15             # ASSUMPTION
+velocity_deviation:          # per-athlete delta_i * (age - mean age): absorbs curve-shape mismatch
+  enabled: true
+  sd_prior: 1.0              # cm/year, half-normal scale. ASSUMPTION
 marginalisation:             # athlete timing and intensity are integrated out on these grids
   timing_half_width_sd: 4.0  # grid spans the timing prior +/- this many SDs
   timing_points: 61          # spacing 0.133 SD; finer grids changed the log-likelihood by < 0.1

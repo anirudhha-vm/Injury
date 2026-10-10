@@ -63,7 +63,9 @@ def _simulate(
     return data, {"alpha": alpha, "beta": beta}
 
 
-def _shared(n_draws: int, sigma: float = 0.2, sigma_alpha: float = 5.0) -> SharedDraws:
+def _shared(
+    n_draws: int, sigma: float = 0.2, sigma_alpha: float = 5.0, sigma_delta: float = 0.0
+) -> SharedDraws:
     linear, coefs = _true_curve()
     ones = np.ones(n_draws)
     return SharedDraws(
@@ -73,6 +75,9 @@ def _shared(n_draws: int, sigma: float = 0.2, sigma_alpha: float = 5.0) -> Share
         sigma=sigma * ones,
         sigma_alpha=sigma_alpha * ones,
         sigma_gamma=0.0 * ones,
+        sigma_delta=sigma_delta * ones,
+        timing_offset=0.0 * ones,
+        sigma_beta=1.0 * ones,
     )
 
 
@@ -154,24 +159,33 @@ def _weights(data: GrowthData, config: dict[str, Any], xp: Any = np, **overrides
         "sigma_alpha": 5.0,
         "sigma_beta": 1.0,
         "sigma_gamma": 0.1,
+        "sigma_delta": 0.4,
+        "timing_offset": 0.3,
     }
     arguments.update(overrides)
     return sitar_bayes._grid_log_weights(xp, **arguments)
 
 
 def test_size_effect_is_integrated_out_correctly(config: dict[str, Any]) -> None:
-    """Each grid cell equals a multivariate normal density with compound-symmetric covariance."""
+    """Each grid cell equals a multivariate normal density with the full marginal covariance.
+
+    Covariance = noise + size effect (all ones) + velocity deviation (centred ages), and the
+    timing prior centre includes the cohort-level offset.
+    """
     data, _ = _simulate(3, seed=1, visits=5)
     grids = sitar_bayes.effect_grids(config)
-    log_weight, _ = _weights(data, config)
+    log_weight, _, _ = _weights(data, config)
     linear, coefs = _true_curve()
     for athlete, b, g in ((0, 40, 2), (1, 10, 0), (2, 70, 4)):
         mine = data.athlete_index == athlete
-        beta = data.prior_aphv[athlete] + 1.0 * grids.timing[b]
+        beta = data.prior_aphv[athlete] + 0.3 + 1.0 * grids.timing[b]
         z = (data.age[mine] - beta) * np.exp(0.1 * grids.intensity[g])
         mean = 150.0 + splines.spline_value(z, linear, coefs, KNOTS)
         n = int(mine.sum())
-        covariance = 0.2**2 * np.eye(n) + 5.0**2 * np.ones((n, n))
+        centred = data.age[mine] - data.age[mine].mean()
+        covariance = (
+            0.2**2 * np.eye(n) + 5.0**2 * np.ones((n, n)) + 0.4**2 * np.outer(centred, centred)
+        )
         expected = (
             stats.multivariate_normal(mean, covariance).logpdf(data.stature[mine])
             + grids.timing_log_weight[b]
@@ -209,10 +223,10 @@ def test_numpy_and_pytensor_likelihoods_agree(config: dict[str, Any]) -> None:
     import pytensor.tensor as pt
 
     data, _ = _simulate(4, seed=3)
-    numeric, numeric_sum = _weights(data, config)
-    symbolic, symbolic_sum = _weights(data, config, xp=pt)
-    np.testing.assert_allclose(symbolic.eval(), numeric, rtol=1e-9)
-    np.testing.assert_allclose(symbolic_sum.eval(), numeric_sum, rtol=1e-9, atol=1e-9)
+    numeric = _weights(data, config)
+    symbolic = _weights(data, config, xp=pt)
+    for ours, theirs in zip(symbolic, numeric, strict=True):
+        np.testing.assert_allclose(ours.eval(), theirs, rtol=1e-9, atol=1e-9)
 
 
 # ------------------------------------------------------------------------- athlete effects
@@ -231,6 +245,33 @@ def test_athlete_effects_recover_known_timing_and_size(config: dict[str, Any]) -
     error = np.abs(posterior.beta.mean(axis=0) - truth["beta"])
     prior_error = np.abs(data.prior_aphv - truth["beta"])
     assert error.mean() < 0.6 * prior_error.mean()  # the data sharpen the Moore-style prior
+
+
+def test_velocity_deviation_is_recovered_and_widens_timing(config: dict[str, Any]) -> None:
+    """Athletes who grow 1 cm/year faster than the shared shape: delta is found, not timing."""
+    data, truth = _simulate(200, seed=21)
+    faster = GrowthData(
+        **{
+            **data.__dict__,
+            "stature": data.stature + 1.0 * (data.age - data.mean_age[data.athlete_index]),
+        }
+    )
+    without = sitar_bayes.draw_athlete_effects(_shared(150), faster, config, seed=1)
+    allowed = sitar_bayes.draw_athlete_effects(
+        _shared(150, sigma_delta=1.0), faster, config, seed=1
+    )
+    assert np.all(without.delta == 0.0)
+    # Partly shrunk by its prior and partly shared with timing, but clearly detected.
+    assert 0.3 < allowed.delta.mean() < 1.0
+    assert allowed.beta.std(axis=0).mean() > without.beta.std(axis=0).mean()
+
+    def coverage(posterior: Any) -> float:
+        low, high = np.quantile(posterior.beta, [0.05, 0.95], axis=0)
+        return float(np.mean((truth["beta"] >= low) & (truth["beta"] <= high)))
+
+    # Ignoring the deviation gives confidently wrong timing; allowing it restores coverage.
+    assert coverage(without) < 0.6
+    assert coverage(allowed) > 0.8
 
 
 def test_two_peaked_timing_is_represented(config: dict[str, Any]) -> None:
@@ -312,7 +353,15 @@ def test_initial_values_reproduce_the_curve_at_the_prior(config: dict[str, Any])
 def test_model_builds_and_likelihood_prefers_the_truth(config: dict[str, Any]) -> None:
     data, _ = _simulate(30, seed=12)
     model = sitar_bayes.build_model(data, config)
-    assert {v.name for v in model.free_RVs} == {"theta", "sigma", "sigma_alpha", "sigma_gamma"}
+    assert {v.name for v in model.free_RVs} == {
+        "theta",
+        "sigma",
+        "sigma_alpha",
+        "sigma_gamma",
+        "sigma_delta",
+        "timing_offset",
+        "sigma_beta",
+    }
     logp = model.compile_logp()
     linear, coefs = _true_curve()
     transform = splines.orthogonalising_transform(KNOTS)
@@ -325,6 +374,8 @@ def test_model_builds_and_likelihood_prefers_the_truth(config: dict[str, Any]) -
 
     disabled = copy.deepcopy(config)
     disabled["intensity"]["enabled"] = False
+    disabled["velocity_deviation"]["enabled"] = False
+    disabled["timing_prior"].update(learn_sd=False, learn_offset=False)
     free = {v.name for v in sitar_bayes.build_model(data, disabled).free_RVs}
     assert free == {"theta", "sigma", "sigma_alpha"}
 
@@ -393,9 +444,13 @@ def test_shared_draws_from_inference_data() -> None:
         "sigma_alpha": np.abs(rng.normal(5, 0.1, (2, 30))),
     }
     idata = az.from_dict(posterior=posterior)
-    shared = sitar_bayes.shared_draws(idata, n_draws=20, seed=1)
+    settings = load_config("growth/sitar.yaml")
+    shared = sitar_bayes.shared_draws(idata, 20, 1, settings)
     assert shared.n_draws == 20 and shared.coefs.shape == (20, 5)
-    assert np.all(shared.sigma_gamma == 0.0)  # intensity disabled in this fit
-    everything = sitar_bayes.shared_draws(idata, n_draws=500, seed=1)
+    # Parameters absent from the fit take their fixed values.
+    assert np.all(shared.sigma_gamma == 0.0) and np.all(shared.sigma_delta == 0.0)
+    assert np.all(shared.timing_offset == 0.0)
+    assert np.all(shared.sigma_beta == settings["timing_prior"]["sd_years"])
+    everything = sitar_bayes.shared_draws(idata, 500, 1, settings)
     assert everything.n_draws == 60
     assert isinstance(pd.Series(everything.sigma).mean(), float)

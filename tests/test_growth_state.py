@@ -17,6 +17,8 @@ IDS = ("early", "late", "intense")
 BETA = np.array([12.0, 15.0, 14.0])
 GAMMA = np.array([0.0, 0.0, 0.3])
 ALPHA = np.array([3.0, -2.0, 0.0])
+DELTA = np.zeros(3)
+MEAN_AGE = np.array([12.0, 14.0, 13.0])
 
 
 def _curve() -> tuple[float, np.ndarray]:
@@ -44,6 +46,11 @@ def _posterior(spread: float = 0.0, synthetic: bool = True) -> SitarPosterior:
         sigma=0.2 * ones,
         sigma_alpha=5.0 * ones,
         sigma_gamma=0.1 * ones,
+        delta=np.tile(DELTA, (N_DRAWS, 1)),
+        sigma_delta=0.5 * ones,
+        timing_offset=0.0 * ones,
+        sigma_beta=1.0 * ones,
+        mean_age=MEAN_AGE,
         sex="male",
         synthetic=synthetic,
     )
@@ -98,6 +105,25 @@ def test_intensity_raises_peak_velocity_and_size_shifts_stature() -> None:
     early_at_peak = posterior.stature("early", 12.0)[0]
     late_at_peak = posterior.stature("late", 15.0)[0]
     assert early_at_peak - late_at_peak == pytest.approx(ALPHA[0] - ALPHA[1], abs=1e-6)
+
+
+def test_velocity_deviation_shifts_velocity_but_not_age_at_phv() -> None:
+    base = _posterior()
+    faster = SitarPosterior(
+        **{**base.__dict__, "delta": np.tile(np.array([0.0, 0.8, 0.0]), (N_DRAWS, 1))}
+    )
+    np.testing.assert_allclose(
+        faster.height_velocity("late", 13.5), base.height_velocity("late", 13.5) + 0.8
+    )
+    # The deviation pivots on the athlete's mean age: no change there, 0.8 cm one year later.
+    np.testing.assert_allclose(faster.stature("late", 14.0), base.stature("late", 14.0))
+    np.testing.assert_allclose(faster.stature("late", 15.0), base.stature("late", 15.0) + 0.8)
+    np.testing.assert_allclose(faster.aphv(), base.aphv())
+    peak_age = float(base.aphv()[0, 1])
+    assert faster.growth_state("late", peak_age).pct_peak_velocity.mean == pytest.approx(100.0)
+    np.testing.assert_allclose(
+        faster.height_velocity("early", 12.0), base.height_velocity("early", 12.0)
+    )
 
 
 def test_growth_state_quantities() -> None:

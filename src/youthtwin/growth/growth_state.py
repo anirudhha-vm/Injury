@@ -7,6 +7,9 @@
 and is plain NumPy, so everything downstream (risk models, dashboard) can use a saved posterior
 without importing the sampler.
 
+The full model adds a per-athlete velocity deviation ``delta_i * (age - mean_age_i)``; a constant
+added to velocity does not move the age at which velocity peaks.
+
 **Age at PHV is defined as the age of maximum velocity of the athlete's fitted curve**, computed
 per posterior draw: ``aphv_i = beta_i + z_peak * exp(-gamma_i)``, where ``z_peak`` maximises
 ``h'(z)`` in that draw. ``beta_i`` alone is not APHV, because nothing forces the spline's
@@ -45,6 +48,10 @@ _ARRAY_FIELDS = (
     "sigma",
     "sigma_alpha",
     "sigma_gamma",
+    "delta",
+    "sigma_delta",
+    "timing_offset",
+    "sigma_beta",
 )
 
 
@@ -121,6 +128,11 @@ class SitarPosterior:
     sigma: FloatArray  # (S,)
     sigma_alpha: FloatArray  # (S,) SD of the size effect
     sigma_gamma: FloatArray  # (S,) SD of the intensity effect (zeros if disabled)
+    delta: FloatArray  # (S, n) velocity deviation, cm/year (zeros if disabled)
+    sigma_delta: FloatArray  # (S,) SD of the velocity deviation
+    timing_offset: FloatArray  # (S,) cohort-level shift of the timing prior centre, years
+    sigma_beta: FloatArray  # (S,) SD of the timing prior, years
+    mean_age: FloatArray  # (n,) each athlete's mean age at measurement (pivot for delta)
     sex: str
     synthetic: bool
 
@@ -201,13 +213,14 @@ class SitarPosterior:
         i = self.index_of(athlete_id)
         z = self._z(i, age)
         curve = splines.spline_value(z, self.linear, self.coefs.T, self.knots)
-        return np.asarray(self.intercept + self.alpha[:, i] + curve, dtype=np.float64)
+        deviation = self.delta[:, i] * (age - self.mean_age[i])
+        return np.asarray(self.intercept + self.alpha[:, i] + curve + deviation, dtype=np.float64)
 
     def height_velocity(self, athlete_id: str, age: float) -> FloatArray:
         """Height velocity (cm/year) at ``age``, per draw."""
         i = self.index_of(athlete_id)
         slope = splines.spline_derivative(self._z(i, age), self.linear, self.coefs.T, self.knots)
-        return np.asarray(slope * np.exp(self.gamma[:, i]), dtype=np.float64)
+        return np.asarray(slope * np.exp(self.gamma[:, i]) + self.delta[:, i], dtype=np.float64)
 
     def growth_state(
         self, athlete_id: str, age: float, forecast_horizon_days: int = 90
@@ -217,7 +230,7 @@ class SitarPosterior:
         aphv = self.aphv()[:, i]
         _, peak_slope = self.z_peak()
         velocity = self.height_velocity(athlete_id, age)
-        peak_velocity = peak_slope * np.exp(self.gamma[:, i])
+        peak_velocity = peak_slope * np.exp(self.gamma[:, i]) + self.delta[:, i]
         now = self.stature(athlete_id, age)
         later = self.stature(athlete_id, age + forecast_horizon_days / DAYS_PER_YEAR)
         return GrowthState(
@@ -244,6 +257,7 @@ class SitarPosterior:
         return SitarPosterior(
             athlete_ids=self.athlete_ids,
             knots=self.knots,
+            mean_age=self.mean_age,
             sex=self.sex,
             synthetic=self.synthetic,
             **arrays,
@@ -258,6 +272,7 @@ class SitarPosterior:
         info = {
             "athlete_ids": list(self.athlete_ids),
             "knots": list(self.knots),
+            "mean_age": self.mean_age.tolist(),
             "sex": self.sex,
             "synthetic": self.synthetic,
             "metadata": metadata or {},
@@ -273,6 +288,7 @@ class SitarPosterior:
         return cls(
             athlete_ids=tuple(info["athlete_ids"]),
             knots=tuple(info["knots"]),
+            mean_age=np.asarray(info["mean_age"], dtype=np.float64),
             sex=info["sex"],
             synthetic=bool(info["synthetic"]),
             **arrays,
