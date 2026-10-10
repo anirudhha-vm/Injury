@@ -1,0 +1,9 @@
+# Markerless vs marker-based agreement (Paper A, hypothesis H5).
+loa_level: 0.95              # limits of agreement = bias +/- 1.96 SD
+ci_level: 0.95
+# Pre-specified acceptance limit for joint angles. PROVISIONAL: the brief gives 5 deg as an
+# example. TODO(human): confirm in paper/preregistration.md before any lab data are analysed.
+rmse_threshold_deg: 5.0
+maturity_band_years: 1.0     # pre / circa / post-PHV = maturity offset below, within, above
+alignment:
+  max_lag_s: 2.0             # search window when aligning mocap and markerless curves in time
