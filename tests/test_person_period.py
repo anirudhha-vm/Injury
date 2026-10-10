@@ -252,6 +252,8 @@ def test_growth_twin_features_are_added_when_posteriors_are_given() -> None:
         sigma_delta=0 * ones,
         timing_offset=0 * ones,
         sigma_beta=ones,
+        cohort_mean=np.nan * ones,
+        cohort_sd=np.nan * ones,
         mean_age=np.array([13.2]),
         sex="male",
         synthetic=True,

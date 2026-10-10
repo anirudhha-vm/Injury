@@ -50,6 +50,8 @@ def _posterior(spread: float = 0.0, synthetic: bool = True) -> SitarPosterior:
         sigma_delta=0.5 * ones,
         timing_offset=0.0 * ones,
         sigma_beta=1.0 * ones,
+        cohort_mean=np.nan * ones,
+        cohort_sd=np.nan * ones,
         mean_age=MEAN_AGE,
         sex="male",
         synthetic=synthetic,

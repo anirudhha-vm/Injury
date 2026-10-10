@@ -60,7 +60,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `growth/splines.py` | Natural cubic spline basis and derivative, usable on NumPy arrays and PyTensor variables; orthogonalising transform for sampling | ✅ |
 | `growth/evaluation.py` | Scores posterior APHV against a known truth: coverage, errors, bias, by group | ✅ |
 | `growth/khamis_roche.py` | % predicted adult height; raises `NotImplementedError` until a human supplies the coefficient table | ✅ (placeholder) |
-| `growth/sitar_bayes.py` | Hierarchical growth model: data preparation, marginal likelihood (athlete effects integrated out), NUTS over the shared curve, exact athlete-effect draws, incremental update, diagnostics | ✅ (coverage criterion not met — see `docs/plans/M2_done.md`) |
+| `growth/sitar_bayes.py` | Hierarchical growth model: data preparation, marginal likelihood (athlete effects integrated out), NUTS over the shared curve, exact athlete-effect draws, incremental update, diagnostics | ✅ (interval coverage in range within 3 years of PHV, not beyond — see `docs/plans/M2_done.md`) |
 | `growth/growth_state.py` | `SitarPosterior` (saved draws, plain NumPy) and `GrowthState`: age at PHV, maturity offset, height velocity, % of peak velocity, 90-day forecast, each with mean, SD and draws | ✅ (stature only) |
 | `io/schema.py` | Row models for the nine tables: types, units, ranges, privacy rules (month-only DOB, no video paths) | ✅ |
 | `io/ingest.py` | Validates tables row by row and loads them into SQLite; all-or-nothing; refuses to mix synthetic and real rows | ✅ |

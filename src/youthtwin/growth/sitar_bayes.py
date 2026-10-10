@@ -14,6 +14,10 @@
   timing estimate, which made intervals too narrow in the first simulation study.
 - Optional cohort-level ``timing_offset`` added to every Moore prior centre, and a learned prior
   SD: the model estimates how biased and how imprecise Moore is in *this* cohort.
+- Optional cohort prior ``beta_i`` ~ Normal(cohort_mean, cohort_sd), both learned. With it the
+  Moore value is treated as a noisy measurement of timing rather than as the only prior, so an
+  athlete whose own data say little (years away from the growth spurt) is pulled toward the
+  cohort's typical timing instead of toward a Moore value that is biased at that distance.
 - One model per sex.
 
 Why the per-athlete effects are integrated out rather than sampled
@@ -213,6 +217,8 @@ def _grid_log_weights(
     sigma_gamma: Any,
     sigma_delta: Any,
     timing_offset: Any,
+    cohort_mean: Any = None,
+    cohort_sd: Any = None,
 ) -> tuple[Any, Any, Any]:
     """Log posterior weight of every (timing, intensity) grid cell for every athlete.
 
@@ -250,6 +256,12 @@ def _grid_log_weights(
         + grids.timing_log_weight[None, :, None]
         + grids.intensity_log_weight[None, None, :]
     )
+    if cohort_sd is not None:
+        # Cohort-level prior: beta_i ~ Normal(cohort_mean, cohort_sd). Together with the term
+        # above, the Moore estimate then acts as a noisy, possibly biased measurement of beta_i.
+        standardised = (beta - cohort_mean) / cohort_sd
+        cohort_term = -0.5 * standardised**2 - xp.log(cohort_sd) - 0.5 * _LOG_2PI
+        log_weight = log_weight + cohort_term[:, :, None]
     return log_weight, total, slope_total
 
 
@@ -294,6 +306,14 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             if timing["learn_sd"]
             else float(timing["sd_years"])
         )
+        cohort = timing["cohort_prior"]
+        cohort_mean: Any = None
+        cohort_sd: Any = None
+        if cohort["enabled"]:
+            cohort_mean = pm.Normal(
+                "cohort_mean", mu=float(np.mean(data.prior_aphv)), sigma=cohort["mean_sd_years"]
+            )
+            cohort_sd = pm.HalfNormal("cohort_sd", sigma=cohort["sd_scale_years"])
         log_weight, _, _ = _grid_log_weights(
             pt,
             age=age,
@@ -312,6 +332,8 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             sigma_gamma=sigma_gamma,
             sigma_delta=sigma_delta,
             timing_offset=timing_offset,
+            cohort_mean=cohort_mean,
+            cohort_sd=cohort_sd,
         )
         flat = log_weight.reshape((data.n_athletes, -1))
         pm.Potential("marginal_likelihood", pt.logsumexp(flat, axis=1).sum())
@@ -383,6 +405,8 @@ class SharedDraws:
     sigma_delta: FloatArray
     timing_offset: FloatArray
     sigma_beta: FloatArray
+    cohort_mean: FloatArray  # NaN when the cohort prior is disabled
+    cohort_sd: FloatArray  # NaN when the cohort prior is disabled
 
     @property
     def n_draws(self) -> int:
@@ -419,6 +443,8 @@ def shared_draws(
         sigma_delta=optional("sigma_delta", 0.0),
         timing_offset=optional("timing_offset", 0.0),
         sigma_beta=optional("sigma_beta", float(config["timing_prior"]["sd_years"])),
+        cohort_mean=optional("cohort_mean", float("nan")),
+        cohort_sd=optional("cohort_sd", float("nan")),
     )
 
 
@@ -441,6 +467,7 @@ def draw_athlete_effects(
     rng = np.random.default_rng(seed)
     n, n_timing, n_intensity = data.n_athletes, grids.timing.size, grids.intensity.size
     alpha, beta, gamma, delta = (np.empty((shared.n_draws, n)) for _ in range(4))
+    use_cohort = bool(np.isfinite(shared.cohort_sd).all())
     rows = np.arange(n)
     for s in range(shared.n_draws):
         sigma_beta = shared.sigma_beta[s]
@@ -462,6 +489,8 @@ def draw_athlete_effects(
             sigma_gamma=shared.sigma_gamma[s],
             sigma_delta=shared.sigma_delta[s],
             timing_offset=shared.timing_offset[s],
+            cohort_mean=shared.cohort_mean[s] if use_cohort else None,
+            cohort_sd=shared.cohort_sd[s] if use_cohort else None,
         )
         flat = log_weight.reshape(n, -1)
         probability = np.exp(flat - flat.max(axis=1, keepdims=True))
@@ -503,6 +532,8 @@ def draw_athlete_effects(
         sigma_delta=shared.sigma_delta,
         timing_offset=shared.timing_offset,
         sigma_beta=shared.sigma_beta,
+        cohort_mean=shared.cohort_mean,
+        cohort_sd=shared.cohort_sd,
         mean_age=mean_age,
         sex=data.sex,
         synthetic=data.synthetic,
@@ -542,6 +573,8 @@ def update(
         sigma_delta=previous.sigma_delta,
         timing_offset=previous.timing_offset,
         sigma_beta=previous.sigma_beta,
+        cohort_mean=previous.cohort_mean,
+        cohort_sd=previous.cohort_sd,
     )
     return draw_athlete_effects(shared, data, config, seed=seed)
 
@@ -556,6 +589,8 @@ def diagnostics(idata: InferenceData) -> dict[str, float]:
         "sigma_delta",
         "timing_offset",
         "sigma_beta",
+        "cohort_mean",
+        "cohort_sd",
     )
     names = [n for n in sampled if n in idata.posterior]
     summary = az.summary(idata, var_names=names, kind="diagnostics")

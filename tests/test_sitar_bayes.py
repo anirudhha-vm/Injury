@@ -78,6 +78,8 @@ def _shared(
         sigma_delta=sigma_delta * ones,
         timing_offset=0.0 * ones,
         sigma_beta=1.0 * ones,
+        cohort_mean=np.nan * ones,
+        cohort_sd=np.nan * ones,
     )
 
 

@@ -429,3 +429,40 @@ period.** Otherwise held-out time would define training labels.
 - Logistic hazard: solver seed fixed for reproducible fits.
 - Dates are converted to one timestamp resolution before joining; mixed resolutions made the
   as-of joins fail.
+
+---
+
+## M2 follow-up — coverage fix (2026-10-10)
+
+**D-065 · Per-athlete velocity deviation added to the growth model.**
+`delta_i * (age - mean age)`, integrated out analytically like the size effect (the two are
+orthogonal because ages are centred per athlete). Why: the first study's intervals were shifted
+and too narrow because any mismatch between an athlete's curve and the shared shape had nowhere
+to go except the timing estimate. A redraw against the saved fit with hand-set sizes showed the
+mechanism (coverage 76% to about 90%); the full refit, with the size *estimated*, gave 81%.
+The hand-set result was not reported as the outcome.
+
+**D-066 · Moore prior offset and width are learned per cohort.**
+Width was learned at about 0.72 years against the brief's default of 1.0.
+
+**D-067 · Cohort-level timing prior implemented, tested, and switched off.**
+It did not improve coverage for athletes far from PHV, so it is not part of the default model.
+Kept as an option because it is the natural structure if the Moore prior proves poor on the
+real cohort.
+
+**D-068 · The fitted curve's growth spurt is the highest interior local maximum of velocity.**
+Same issue as in the growth simulator: childhood velocity at the young edge of the range can
+exceed the pubertal peak, and a global maximum then returns the edge. No effect on the reported
+run (all draws had an interior peak), but it would have corrupted a wider-knot model.
+
+**D-069 · Iteration on M2 stopped with the criterion met only within 3 years of PHV.**
+Each proper experiment costs about 90 minutes and the fast proxy (MAP) proved unreliable for
+variance parameters. The acceptance range in the config is unchanged; the shortfall and its
+location are documented in `docs/plans/M2_done.md` rather than tuned away.
+
+**Process note.** While the refit ran, the machine restarted once; the run that completed was
+launched from clean commit `bb26d5a` and its provenance record says so.
+
+**Process note.** An unanchored `.gitignore` rule for model weights (`models/`) also matched
+`src/youthtwin/models` and `configs/models`. One push went out without four new source files
+and those files were skipped by the linter. Fixed by anchoring the rule to the repository root.

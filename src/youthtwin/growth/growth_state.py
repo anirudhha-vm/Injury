@@ -52,6 +52,8 @@ _ARRAY_FIELDS = (
     "sigma_delta",
     "timing_offset",
     "sigma_beta",
+    "cohort_mean",
+    "cohort_sd",
 )
 
 
@@ -132,6 +134,8 @@ class SitarPosterior:
     sigma_delta: FloatArray  # (S,) SD of the velocity deviation
     timing_offset: FloatArray  # (S,) cohort-level shift of the timing prior centre, years
     sigma_beta: FloatArray  # (S,) SD of the timing prior, years
+    cohort_mean: FloatArray  # (S,) cohort mean timing, years (NaN if the cohort prior is off)
+    cohort_sd: FloatArray  # (S,) cohort SD of timing, years (NaN if off)
     mean_age: FloatArray  # (n,) each athlete's mean age at measurement (pivot for delta)
     sex: str
     synthetic: bool
@@ -172,14 +176,27 @@ class SitarPosterior:
     def z_peak(self) -> tuple[FloatArray, FloatArray]:
         """Location and height of the velocity peak of the mean curve, per draw.
 
-        Searched between the boundary knots. A draw whose maximum is at a boundary has no
-        interior peak; its location is the boundary (and should be rare in a healthy fit).
+        Searched between the boundary knots for the highest interior local maximum. A draw
+        without one has no growth spurt in range; its location is then the global maximum,
+        normally a boundary (and should be rare in a healthy fit).
         """
         grid = np.arange(
             self.knots[0], self.knots[-1] + _PEAK_GRID_STEP_YEARS, _PEAK_GRID_STEP_YEARS
         )
         velocity = self.mean_curve_velocity(grid)
-        k = np.argmax(velocity, axis=1)
+        # The growth spurt is the highest *interior local* maximum of velocity. Childhood
+        # velocity at the young edge of the knot range can exceed the pubertal peak, so the
+        # global maximum would sometimes be the edge. Draws with no interior local maximum fall
+        # back to the global maximum and are reported by ``has_interior_peak``.
+        local = np.zeros_like(velocity, dtype=np.bool_)
+        local[:, 1:-1] = (velocity[:, 1:-1] > velocity[:, :-2]) & (
+            velocity[:, 1:-1] >= velocity[:, 2:]
+        )
+        k = np.where(
+            local.any(axis=1),
+            np.argmax(np.where(local, velocity, -np.inf), axis=1),
+            np.argmax(velocity, axis=1),
+        )
         rows = np.arange(self.n_draws)
         interior = (k > 0) & (k < grid.size - 1)
         ki = np.clip(k, 1, grid.size - 2)

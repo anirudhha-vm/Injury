@@ -12,6 +12,10 @@ timing_prior:
   learn_sd: true             # estimate how imprecise the Moore prior is in this cohort
   learn_offset: true         # estimate a cohort-level bias of the Moore prior
   offset_sd_years: 0.5       # ASSUMPTION
+  cohort_prior:              # beta_i ~ Normal(cohort_mean, cohort_sd), both learned per sex
+    enabled: false           # tested against a saved fit: no improvement in coverage (D-067)
+    mean_sd_years: 1.0       # prior SD of the cohort mean around the mean Moore estimate. ASSUMPTION
+    sd_scale_years: 1.5      # half-normal scale of the cohort SD. ASSUMPTION
 priors:                      # ASSUMPTION
   curve_sd_cm: 30.0          # each orthogonal direction of the mean curve
   size_sd_cm: 8.0
