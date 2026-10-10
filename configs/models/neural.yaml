@@ -1,0 +1,31 @@
+# Neural hazard training (brief §6.5-6.6). Starting values (ASSUMPTION).
+head:
+  hidden: 32
+  dropout: 0.1
+learning_rate: 0.001
+weight_decay: 0.0001
+batch_size: 256
+max_epochs: 30
+patience: 5                  # early stopping on validation athletes drawn from the training fold
+min_delta: 0.0001
+validation_fraction: 0.2
+ensemble_size: 5             # deep ensemble: networks differing only in seed
+# Growth-state vector g that conditions the encoder. With growth-twin posteriors:
+growth_columns_twin: [twin_maturity_offset_mean, twin_height_velocity_mean, twin_pct_peak_velocity_mean,
+                      twin_maturity_offset_sd, twin_height_velocity_sd]
+# Without them (fallback; no uncertainty to propagate):
+growth_columns_observed: [moore_maturity_offset, obs_height_velocity, obs_leg_length_velocity]
+# Inputs to the head that are not growth quantities (identical across conditioning modes).
+tabular_columns: [hours_total, ewma_hours, n_prior_injuries, weeks_since_screen]
+uncertainty:
+  n_growth_draws: 30         # growth-posterior draws pushed through the model
+  interval_level: 0.90
+pretraining:                 # masked-segment reconstruction on unlabelled training trials
+  enabled: true
+  epochs: 20
+  batch_size: 128
+  learning_rate: 0.001
+  mask_fraction: 0.2
+  time_warp_range: [0.9, 1.1]
+  noise_sd: 0.05             # in standardised units
+  offset_sd: 0.05

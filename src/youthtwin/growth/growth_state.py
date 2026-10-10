@@ -270,27 +270,35 @@ class SitarPosterior:
         tables. Keys: ``aphv, maturity_offset, height_velocity, pct_peak_velocity``, each with
         ``_mean`` and ``_sd``; arrays align with ``ages``.
         """
-        i = self.index_of(athlete_id)
-        ages = np.asarray(ages, dtype=np.float64)
-        location, peak_slope = self.z_peak()
-        stretch = np.exp(self.gamma[:, i])
-        aphv = self.beta[:, i] + location / stretch  # (S,)
-        z = (ages[None, :] - self.beta[:, i : i + 1]) * stretch[:, None]  # (S, A)
-        slope = splines.spline_derivative(z, self.linear[:, None], self._coef_columns(), self.knots)
-        velocity = slope * stretch[:, None] + self.delta[:, i : i + 1]
-        peak = (peak_slope * stretch + self.delta[:, i])[:, None]
-        quantities = {
-            "aphv": np.broadcast_to(aphv[:, None], z.shape),
-            "maturity_offset": ages[None, :] - aphv[:, None],
-            "height_velocity": velocity,
-            "pct_peak_velocity": 100.0 * velocity / peak,
-        }
+        quantities = self.draws_at(athlete_id, ages)
         ddof = 1 if self.n_draws > 1 else 0
         features: dict[str, FloatArray] = {}
         for name, draws in quantities.items():
             features[f"{name}_mean"] = np.asarray(draws.mean(axis=0), dtype=np.float64)
             features[f"{name}_sd"] = np.asarray(draws.std(axis=0, ddof=ddof), dtype=np.float64)
         return features
+
+    def draws_at(self, athlete_id: str, ages: FloatArray) -> dict[str, FloatArray]:
+        """Posterior draws of the growth state at many ages for one athlete: (draws, ages).
+
+        Same quantities as ``features_at`` but not summarised, for pushing growth uncertainty
+        through a risk model.
+        """
+        i = self.index_of(athlete_id)
+        ages = np.asarray(ages, dtype=np.float64)
+        location, peak_slope = self.z_peak()
+        stretch = np.exp(self.gamma[:, i])
+        aphv = self.beta[:, i] + location / stretch
+        z = (ages[None, :] - self.beta[:, i : i + 1]) * stretch[:, None]
+        slope = splines.spline_derivative(z, self.linear[:, None], self._coef_columns(), self.knots)
+        velocity = slope * stretch[:, None] + self.delta[:, i : i + 1]
+        peak = (peak_slope * stretch + self.delta[:, i])[:, None]
+        return {
+            "aphv": np.asarray(np.broadcast_to(aphv[:, None], z.shape), dtype=np.float64),
+            "maturity_offset": np.asarray(ages[None, :] - aphv[:, None], dtype=np.float64),
+            "height_velocity": np.asarray(velocity, dtype=np.float64),
+            "pct_peak_velocity": np.asarray(100.0 * velocity / peak, dtype=np.float64),
+        }
 
     # --- persistence ------------------------------------------------------------------
 

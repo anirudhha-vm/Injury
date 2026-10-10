@@ -33,7 +33,7 @@ from youthtwin.growth.maturity_equations import Sex, moore2015
 from youthtwin.io.schema import NON_CONTACT_GROUPS
 
 DAYS_PER_WEEK = 7
-ID_COLUMNS = ["athlete_id", "week_start", "academy_id"]
+ID_COLUMNS = ["athlete_id", "week_start", "academy_id", "screen_session_id"]
 CATEGORICAL = ["sex", "sport"]
 ALL_NON_CONTACT = "all_non_contact"
 LABEL_PREFIX = "y_"
@@ -147,7 +147,8 @@ def _screen_table(task_features: pd.DataFrame, sessions: pd.DataFrame) -> pd.Dat
     )
     wide = wide.reset_index().merge(sessions[["id", "date"]], left_on="session_id", right_on="id")
     wide["screen_date"] = _timestamps(wide["date"])
-    return wide.drop(columns=["session_id", "id", "date"])
+    wide = wide.rename(columns={"session_id": "screen_session_id"})
+    return wide.drop(columns=["id", "date"])
 
 
 def _latest_before(weeks: pd.DataFrame, events: pd.DataFrame, date_column: str) -> pd.DataFrame:
