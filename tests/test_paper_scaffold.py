@@ -62,7 +62,7 @@ def test_spec_formatting() -> None:
     assert methods.spec(True) == "[[SPEC: yes]]" and methods.spec(False) == "[[SPEC: no]]"
 
 
-@pytest.mark.parametrize("name", ["paperA_outline.md", "paperB_outline.md"])
+@pytest.mark.parametrize("name", ["paperA_outline.md", "paperB1_outline.md", "paperB_outline.md"])
 def test_outlines_contain_placeholders_and_no_results(name: str) -> None:
     text = (PAPER / name).read_text(encoding="utf-8")
     assert text.count("[[RESULT:") >= 8
@@ -96,3 +96,27 @@ def test_paper_b_follows_tripod_and_keeps_simulation_separate() -> None:
 def test_whole_paper_directory_passes_the_results_guard() -> None:
     violations = scan_paper_dir(PAPER)
     assert violations == [], "\n".join(v.format() for v in violations)
+
+
+def test_preregistration_separates_confirmatory_from_exploratory() -> None:
+    text = (PAPER / "preregistration.md").read_text(encoding="utf-8")
+    assert scan_text(text, PAPER / "preregistration.md") == []
+    for line in (
+        "**H3 (B2, exploratory):**",
+        "**H4 (B2, exploratory):**",
+        "**H2 (B2, confirmatory):**",
+    ):
+        assert line in text
+    assert "Risk thresholds are elicited before data lock" in text
+    assert "No threshold is chosen after seeing results" in text
+    hazard = load_config("models/hazard.yaml")["confirmatory"]
+    assert f"[[SPEC: max_parameters = {hazard['max_parameters']}]]" in text
+    assert "[[SPEC: 3 years]]" in text  # the growth-twin calibration claim is restricted
+
+
+def test_methods_describe_the_confirmatory_model() -> None:
+    text = methods.render_methods(methods.load_all())
+    assert "Confirmatory model: logistic regression" in text
+    assert "All larger models below are exploratory." in text
+    first = load_config("models/hazard.yaml")["confirmatory"]["candidate_predictors_in_order"][0]
+    assert first.replace("_", " ") in text

@@ -36,6 +36,8 @@ Mechanistic load proxies (not validated against force plates: [[SPEC: yes]]) wer
 
 ## Models
 
+Confirmatory model: logistic regression whose predictors were taken, in this pre-specified order, from obs leg length velocity, twin maturity offset mean, mech patellar tendon load proxy bw, moore maturity offset, ewma hours, using only as many as the achieved numbers of athletes and events supported under the criteria of Riley et al. (at most [[SPEC: 5]]), one parameter per predictor. [[RESULT: number of predictors used and the athlete and event counts that determined it]]. All larger models below are exploratory.
+
 Baselines (logistic regression):
 
 - age only: age

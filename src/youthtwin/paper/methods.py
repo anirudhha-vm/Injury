@@ -186,6 +186,13 @@ def render_methods(configs: Mapping[str, Mapping[str, Any]]) -> str:
         "",
         "## Models",
         "",
+        "Confirmatory model: logistic regression whose predictors were taken, in this pre-specified order, from "
+        f"{_names(hazard['confirmatory']['candidate_predictors_in_order'])}, using only as many as the achieved "
+        "numbers of athletes and events supported under the criteria of Riley et al. (at most "
+        f"{spec(hazard['confirmatory']['max_parameters'])}), one parameter per predictor. "
+        "[[RESULT: number of predictors used and the athlete and event counts that determined it]]. "
+        "All larger models below are exploratory.",
+        "",
         "Baselines (logistic regression):",
         "",
         baseline_lines,

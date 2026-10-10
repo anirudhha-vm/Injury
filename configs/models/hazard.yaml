@@ -11,6 +11,20 @@ exposure:
   acwr_as_primary: false
 class_imbalance:
   smote: false               # never on person-period data
+# Confirmatory model (docs/RESEARCH_STRATEGY.md, decision 1): predictors are taken from this
+# pre-specified list, in order, and only as many as the achieved number of athletes and events
+# supports under the Riley et al. criteria. Fixed before outcome data are seen.
+confirmatory:
+  candidate_predictors_in_order:
+    - obs_leg_length_velocity                   # growth velocity
+    - twin_maturity_offset_mean                 # maturity timing from the growth twin
+    - mech_patellar_tendon_load_proxy_bw        # one landing-load measure
+    - moore_maturity_offset                     # used only if the twin feature is unavailable
+    - ewma_hours                                # exposure
+  max_parameters: 5
+  C: 1000.0                   # effectively unpenalised: the parameter count is the control
+  max_iter: 5000
+# Everything below is EXPLORATORY unless the cohort reaches the event count its size needs.
 # Hyperparameters below are starting values (ASSUMPTION); they are tuned in inner folds (M7).
 hazard_logit:
   penalty: elastic_net

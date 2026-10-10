@@ -18,6 +18,9 @@ proportion_right_dominant: 0.9
 growth:
   model: preece_baines_1   # h(t) = h1 - 2(h1 - h_theta) / (exp(s0(t-theta)) + exp(s1(t-theta)))
   aphv_years:              # target distribution of TRUE age at PHV (from the brief)
+    # Decision 2026-10-10: Indian reference studies put PHV near 10.5-11 y (girls) and
+    # 12-13.5 y (boys). Switch to those, with citations, at the next full re-run of the studies;
+    # not changed now because saved posteriors and the dashboard depend on this cohort.
     female: {mean: 12.0, sd: 1.0}
     male: {mean: 14.0, sd: 1.0}
   adult_height_cm:         # h1

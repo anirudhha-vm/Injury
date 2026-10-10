@@ -6,6 +6,11 @@
 # --- Human verification gates (only a human sets these to true; see `make gate`) ---
 # TODO(human): verify Mirwald girls coefficients against Mirwald et al. (2002) MSSE 34(4):689-694.
 mirwald_girls_verified: false
+# Cross-check on 2026-10-10 (docs/RESEARCH_STRATEGY.md): every magnitude below is reproduced in
+# two peer-reviewed papers (Cossio-Bolanos et al. 2021; Murayama et al. 2023), but those two
+# disagree with each other on the SIGN of age_x_leg_length (boys) and age_x_mass (girls), and
+# on whether the third term uses sitting height or standing height. Secondary sources cannot
+# settle this; the flag stays false until the original papers have been read.
 
 primary_family: moore2015
 secondary_family: mirwald2002

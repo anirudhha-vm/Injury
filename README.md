@@ -28,6 +28,7 @@ make todo       # everything waiting on a human decision
 | `CLAUDE.md` | working rules and scientific non-negotiables |
 | `docs/FILE_MAP.md` | what every file is responsible for |
 | `docs/CHANGELOG_REASONING.md` | what changed and why |
+| `docs/RESEARCH_STRATEGY.md` | design and positioning decisions for the papers, with evidence |
 | `docs/plans/` | per-milestone plans and completion notes |
 
 ## When real data arrives

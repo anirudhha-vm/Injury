@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M9).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (strategy decisions after M9).
 
 ## Root
 
@@ -40,6 +40,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `models/tcn_film.yaml`, `models/stgcn_film.yaml` | Encoder sizes and parameter budget | ✅ |
 | `models/neural.yaml` | Neural hazard training, growth-vector and tabular columns, uncertainty draws, pre-training | ✅ |
 | `eval/splits.yaml` | Grouped / nested / temporal / leave-one-academy-out split definitions | ✅ (read by scripts from M7) |
+| `eval/sample_size.yaml` | Sample-size planning scenarios (event proportions, parameter counts, cohort sizes) | ✅ |
 | `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
 | `dashboard.yaml` | Prompt thresholds, uncertainty draws, growth-curve grid, labels shown | ✅ (thresholds are placeholders) |
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations (names and switches only, never results) | ✅ |
@@ -91,6 +92,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `features/exposure.py` | Weekly hours, sessions, exponentially weighted load, change in hours | ✅ |
 | `features/mech_load.py` | Mechanistic load proxies (knee-extensor moment, patellar-tendon, Achilles), defined up to a constant; not force-plate validated | ✅ (not yet used in a fitted model) |
 | `models/tabular.py` | `HazardModel` (pipeline + input list + leakage check), natural-spline transformer, preprocessing fitted on training rows only, partial effect | ✅ |
+| `models/confirmatory.py` | The confirmatory risk model: leading entries of a pre-specified predictor list, as many as the achieved events support | ✅ |
 | `models/baselines.py` | Age-only, maturity + growth velocity, and screening-only logistic baselines | ✅ |
 | `models/risk/hazard_logit.py` | Elastic-net discrete-time logistic hazard with spline terms | ✅ |
 | `models/risk/hazard_xgb.py` | Gradient-boosted hazard with optional monotone constraints | ✅ |
@@ -104,6 +106,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `models/pretrain/ssl.py` | Masked-segment pre-training on unlabelled trials; augmentations without left/right mirroring | ✅ |
 | `models/dataset.py` | Builds encoder sequences for a synthetic cohort through the real pose pipeline; athlete-week arrays; growth-posterior draws | ✅ |
 | `eval/splits.py` | Athlete-grouped stratified folds, nested folds, temporal hold-out, leave-one-academy-out; overlap check | ✅ |
+| `eval/sample_size.py` | Riley et al. sample-size criteria for a binary-outcome prediction model, and the number of parameters a cohort supports | ✅ |
 | `eval/collinearity.py` | Variance inflation factors and a warning for redundant model inputs | ✅ |
 | `eval/metrics.py` | AUC (time-dependent at the horizon), PR-AUC, Brier score, sensitivity/specificity at pre-specified thresholds | ✅ |
 | `eval/ablation.py` | Runs the nine pre-registered configurations with athlete-grouped cross-validation; tidy results with run IDs; optional scoring against known true risk | ✅ |
@@ -137,6 +140,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `outputs/ablation/<run_id>/results.csv` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
+| `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
 | `check_cohort.py` | First command on real data: validates a cohort folder against the schema and writes anthropometry QC flags and TEM per measurer | ✅ |
 | `draft_methods.py` | Regenerates `paper/methods_draft.md` (`make methods`) | ✅ |
 | `build_dashboard.py` | Builds the dashboard bundle from the synthetic cohort and saved growth posteriors (`make dashboard-data`) | ✅ |
@@ -179,6 +183,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
 | `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |
+| `test_sample_size.py`, `test_confirmatory.py` | Wrong sample-size arithmetic; a confirmatory model larger than the events support, or with predictors chosen by the data | ✅ |
 | `test_paper_scaffold.py` | Methods text out of step with the configs; numbers in outlines; synthetic results outside the simulation section | ✅ |
 | `test_dashboard.py` | Prescriptive or diagnostic prompt wording; risk asserted from maturity alone (v2); uncited prompts; identifying or video fields in the bundle; app crashes | ✅ |
 | `test_evaluation_report.py` | Tables that cannot be traced; figures or tables in `paper/` without provenance | ✅ |
@@ -190,6 +195,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
+| `docs/RESEARCH_STRATEGY.md` | Study-design and positioning decisions with their literature evidence: three-paper plan, sample-size-limited confirmatory model, novelty claims, equation cross-check, what remains for humans | ✅ |
 | `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M9 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
@@ -197,6 +203,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `paper/preregistration.md` | Hypotheses, primary outcome/metric, ablation set — template to register before real data | ✅ template |
 | `paper/tripod_ai_checklist.md` | TRIPOD+AI item → where it is satisfied | ✅ working copy |
 | `paper/paperA_outline.md`, `paperB_outline.md` | Paper outlines mapped to reporting items; results as placeholders only | ✅ |
+| `paper/paperB1_outline.md` | Outline of the growth-twin paper (separated from the prediction paper by decision) | ✅ |
 | `paper/methods_draft.md` | Methods text generated from `configs/`; never edited by hand | ✅ generated |
 | `paper/figures/`, `paper/tables/` | Generated only by `scripts/make_figures.py`, each file with a provenance sidecar; git-ignored (regenerate, never edit) | ✅ |
 | `data/README.md`, `data/schema/README.md` | What lives where, privacy rules | ✅ |

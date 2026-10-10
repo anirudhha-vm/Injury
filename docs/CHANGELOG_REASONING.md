@@ -649,3 +649,60 @@ A test asserts the word "synthetic" does not appear in the Results section.
 `scripts/fit_growth.py` run from it. Why: until this, every analysis script generated the
 synthetic cohort internally, so there was no command to run on real data. The neural ablation
 and the dashboard build are still synthetic-only, and the README says so.
+
+---
+
+## Strategy decisions after M9 (2026-10-10)
+
+The team asked me to verify what I could and to take the open design decisions. Evidence and
+full reasoning: `docs/RESEARCH_STRATEGY.md`.
+
+### Research findings
+**R-004 · Mirwald coefficients: magnitudes corroborated twice, signs and one variable disputed.**
+Cossio-Bolanos et al. (2021) and Murayama et al. (2023, page read directly) both reproduce every
+magnitude in the brief. They disagree with each other on the sign of two coefficients and on
+whether the third term uses sitting or standing height. Secondary sources therefore cannot
+verify the equations. The gate stays closed; I did not set it to true.
+
+**R-005 · Published growth-related injury rates are far lower than the simulation assumed.**
+603 time-loss apophyseal injuries in 16,024 player-seasons (Br J Sports Med 2025): about 4 per
+100 athletes per season. The synthetic cohort generates about 18 per 100.
+
+**R-006 · The field's models are weak in ways this project can avoid.**
+Bullock et al. (2022): 98% of 204 models at high or unclear risk of bias, none externally
+validated, 7% of studies reporting calibration.
+
+**R-007 · Maturity equations fail across populations; Indian reference timing is earlier than
+the brief assumed.** Murayama et al. (2023) for Japan; Indian growth studies place PHV near
+10.5-11 y (girls) and 12-13.5 y (boys).
+
+### Decisions
+**D-102 · Sample size sets the confirmatory model's size.**
+`eval/sample_size.py` implements the Riley et al. criteria (worked example reproduced by hand).
+At 4-15% of athletes injured per season, 300 athletes support one or two predictor parameters.
+`models/confirmatory.py` therefore takes predictors from a pre-specified ordered list and uses
+only as many as the achieved events support; a test checks the data cannot substitute another
+column. Missing-value indicators are not used there, because each one would add a parameter.
+
+**D-103 · Everything larger is exploratory.**
+The penalised hazard, boosted hazard, conditioned encoder and ablation remain, labelled
+exploratory in the pre-registration, the outlines and the generated methods text.
+
+**D-104 · Three papers instead of two.**
+The growth twin gets its own paper (B1): it has a continuous outcome the cohort can support, the
+first maturity-timing data in Indian youth athletes, and the two-valued-timing result.
+`paper/paperB1_outline.md` added; the former Paper B outline is now B2.
+
+**D-105 · Risk thresholds are elicited from physiotherapists before data lock.**
+I did not pick numbers: a threshold encodes how many unnecessary reviews are acceptable per
+injured athlete found, which is a clinical judgement.
+
+**D-106 · Growth-twin calibration claim restricted to within 3 years of PHV (H1b), and the
+wider-knot experiment launched.** Its result will be recorded whichever way it falls.
+
+**D-107 · Recommendations that need the team:** football plus cricket; at least 1,000
+athlete-seasons; record all confirmed problems, not only time-loss; switch the simulation to
+Indian reference timing and persistent training load at the next full re-run.
+
+**Process note.** The results guard rejected a `[[CITED: ...]]` tag of mine that spanned two
+lines in the pre-registration. The tag was put on one line; the guard was not loosened.

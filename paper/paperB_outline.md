@@ -1,4 +1,8 @@
-# Paper B outline — An uncertainty-aware, maturity-conditioned digital twin for dynamic prediction of growth-related injury in youth athletes
+# Paper B2 outline — Dynamic, cause-specific prediction of growth-related injury in youth athletes with propagated maturity uncertainty
+
+> Decision 2026-10-10 (`docs/RESEARCH_STRATEGY.md`): the growth twin is reported in its own
+> paper (`paperB1_outline.md`). This paper's confirmatory model is deliberately small, sized by
+> the number of events; the conditioned encoder and the ablation are exploratory.
 
 > Scaffold. No results exist for real athletes. Every result is a `[[RESULT: …]]` placeholder to
 > be filled by a script-produced `[[RUN:<run_id>|value]]`. Design values are in
@@ -25,7 +29,9 @@
    derivation samples of mainly European ancestry (Malina & Kozieł 2014; Moore et al. 2015).
    Generalisation to Indian youth is unknown.
 5. Gap: no individual, uncertainty-aware, dynamic model combining growth and movement.
-6. Objectives and pre-registered hypotheses H1–H4 (`paper/preregistration.md`).
+6. The state of injury prediction models in sport: almost all at high risk of bias, rarely
+   calibrated, none externally validated (Bullock et al. 2022); what this paper does differently.
+7. Objectives and pre-registered hypotheses H2–H4 (`paper/preregistration.md`).
 
 ## Methods (items 5–19; order follows TRIPOD+AI)
 | Section | Item | Source |
@@ -35,7 +41,7 @@
 | Data preparation and quality control | 7 | methods draft: movement screening; anthropometry QC |
 | Outcome: physiotherapist-diagnosed, OSIICS-coded, three groups; blinding | 8 | methods draft: outcomes; `docs/protocol/04_injury_surveillance_sop.md` |
 | Predictors: growth state, screening features and embedding, exposure, history | 9 | methods draft |
-| Sample size (Riley et al. 2020) | 10 | TODO: `scripts/sample_size.py` once incidence is known |
+| Sample size and resulting model complexity (Riley et al. 2020) | 10 | `scripts/sample_size.py`; methods draft: models |
 | Missing data | 11 | TODO: decide and pre-register |
 | Growth twin (C1) | 12 | methods draft: growth twin |
 | Movement pipeline and conditioned encoder (C2) | 12 | methods draft: models |
@@ -55,12 +61,13 @@
 2. Injury incidence by type per exposure time: [[RESULT: incidence table]].
 3. Growth twin accuracy against athletes who passed PHV during follow-up (H1):
    [[RESULT: error of posterior age at PHV versus Moore and Mirwald estimates; interval coverage]].
-4. Discrimination, calibration and net benefit for growth-related injury (H2):
+4. Confirmatory model (H2): [[RESULT: number of predictors the event count supported]].
+   Discrimination, calibration and net benefit for growth-related injury:
    [[RESULT: primary metric with athlete-level bootstrap interval for each model]];
    [[RESULT: calibration intercept, slope and curve]]; [[RESULT: decision curves]].
-5. Ablation of conditioning modes (H3): [[RESULT: nine-configuration table with paired
-   differences against the pre-specified comparator]].
-6. Effect of propagating growth uncertainty on calibration (H4):
+5. Exploratory: ablation of conditioning modes (H3): [[RESULT: nine-configuration table with
+   paired differences against the pre-specified comparator]].
+6. Exploratory: effect of propagating growth uncertainty on calibration (H4):
    [[RESULT: calibration measures with and without propagation]].
 7. Secondary outcomes (soft-tissue, all non-contact): [[RESULT: same measures]].
 8. Subgroups: [[RESULT: performance by sex, maturity stratum, sport, age band]].
