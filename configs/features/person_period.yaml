@@ -1,0 +1,10 @@
+# Athlete-week (person-period) table (brief §6.6). The prediction horizon and outcome groups
+# are read from configs/models/hazard.yaml so they are defined in one place.
+exposure:
+  ewma_half_life_weeks: 3.0        # ASSUMPTION
+observed_velocity:                 # finite-difference growth velocities from the measurements
+  n_visits: 3                      # most recent visits used for the slope
+  min_span_days: 60                # shorter spans give no velocity (too noisy)
+# Column-name patterns that may never be model inputs (non-negotiables N1, N2).
+forbidden_predictor_prefixes: [y_, true_, hazard_, trait_]
+forbidden_predictor_names: [outcome_group, onset_date, osiics_code, time_loss_days, at_risk, diagnosed_by]
