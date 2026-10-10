@@ -17,6 +17,7 @@ dependencies = [
     "pymc>=5.16",
     "scikit-learn>=1.8",
     "scipy>=1.13",
+    "torch>=2.4",
     "typer>=0.12",
     "xgboost>=2.1",
 ]
@@ -88,3 +89,13 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module = ["youthtwin.growth.sitar_bayes"]
 disallow_untyped_calls = false
+
+# PyTorch is taken from the CPU-only index: the models are small, and the default wheels bundle
+# several gigabytes of GPU libraries. Install a CUDA build by hand if a GPU is wanted.
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }

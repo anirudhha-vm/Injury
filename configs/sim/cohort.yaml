@@ -67,6 +67,16 @@ movement:                        # per-session screening summary features
     knee_extensor_load_proxy: {mean: 0.0, scale: 1.0}        # standardised
     landing_peak_knee_flexion_deg: {mean: 75.0, scale: 10.0}
     knee_fppa_ic_deg: {mean: 5.0, scale: 6.0}
+  sequences:                     # synthetic drop-jump trials per session (for the encoder)
+    trials_per_session: 3
+    fps: 60.0
+    noise_px: 1.0
+    trial_noise_deg: 3.0
+    peak_knee_flexion_mean: 80.0
+    peak_knee_flexion_per_load: 8.0   # degrees less flexion per unit of load proxy (stiffer)
+    peak_knee_flexion_range: [45.0, 115.0]
+    peak_fppa_mean: 6.0
+    peak_fppa_per_load: 2.0
 
 exposure:
   training_hours:
