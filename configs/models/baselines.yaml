@@ -1,11 +1,11 @@
-# Baseline risk models (brief §6.6). All cause-specific. Used from M5.
+# Baseline risk models (brief §6.6). All cause-specific, plain logistic regression on
+# athlete-week columns (see src/youthtwin/features/person_period.py).
+C: 1000.0                     # effectively unpenalised
+max_iter: 5000
 baselines:
   age_only:
-    model: logistic
     predictors: [age]
-  maturity_growth_velocity:  # clinical baseline
-    model: logistic
-    predictors: [maturity_offset, height_velocity, leg_length_velocity, mass_velocity]
+  maturity_growth_velocity:   # clinical baseline
+    predictors: [moore_maturity_offset, obs_height_velocity, obs_leg_length_velocity, obs_mass_velocity]
   screening_only:
-    model: logistic
-    predictors: screening_task_features
+    predictor_prefix: scr__

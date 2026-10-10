@@ -11,10 +11,24 @@ exposure:
   acwr_as_primary: false
 class_imbalance:
   smote: false               # never on person-period data
-models:
-  hazard_logit: {penalty: elastic_net, continuous_terms: natural_splines}
-  hazard_xgb: {monotone_constraints: optional}
-  hazard_neural: {head: small_mlp, film: optional}
+# Hyperparameters below are starting values (ASSUMPTION); they are tuned in inner folds (M7).
+hazard_logit:
+  penalty: elastic_net
+  C: 0.5                      # inverse regularisation strength
+  l1_ratio: 0.5
+  max_iter: 5000
+  class_weight: null          # proper likelihood first; weights only if needed
+  n_spline_knots: 4           # natural cubic splines, knots at training-fold quantiles
+  spline_terms: [age, moore_maturity_offset, obs_height_velocity, obs_leg_length_velocity]
+hazard_xgb:
+  n_estimators: 200
+  max_depth: 3
+  learning_rate: 0.05
+  subsample: 0.8
+  colsample_bytree: 0.8
+  min_child_weight: 5
+  monotone_constraints: {}    # optional: {feature_name: 1 or -1}
+hazard_neural: {head: small_mlp, film: optional}   # M6
 uncertainty:
   posterior_draw_propagation: true
   deep_ensemble_seeds: 5

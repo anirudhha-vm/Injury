@@ -370,3 +370,62 @@ TRC is plain text and needed no dependency; the C3D reader is written but has ne
 arithmetic slip in a hand-worked standard error, and an assumption that the Bland-Altman slope
 is zero without proportional bias (unequal error variances alone produce a small slope; now
 documented in the module and tested at its predicted size).
+
+---
+
+## M5 — athlete-week table and tabular hazard models (2026-10-10)
+
+### Decisions
+
+**D-054 · Prediction time is the end of week w; the outcome window is the following 4 weeks.**
+Predictors use data dated strictly before that time; outcomes are onsets in the window after it.
+Stated once in `person_period.py` and tested against hand-built cases.
+
+**D-055 · Weeks whose outcome window runs past the end of follow-up are excluded.**
+Why: their label would be "no injury" only because nobody was watching.
+
+**D-056 · Injury history is a predictor; other outcomes' labels are not.**
+N2 forbids label-defining features as inputs. Past injuries (onset before the prediction time)
+are legitimate history. The concurrent label of another outcome group is defined by the same
+future injuries and is refused by the leakage guard.
+
+**D-057 · The leakage guard runs when a model is constructed.**
+`HazardModel` checks its input list against forbidden names and prefixes, so a leaked column
+fails loudly before fitting rather than being noticed in a results table.
+
+**D-058 · Preprocessing lives inside the model pipeline.**
+Imputation values, spline knots, scaling and category levels are all learned in `fit`, so
+fitting on a training fold cannot see held-out rows (N4). Tested by corrupting held-out rows.
+
+**D-059 · Spline knots at training-fold quantiles; natural cubic basis reused from the growth
+model.** No hand-drawn risk curve around PHV (v2): the shape is learned and reportable.
+
+**D-060 · The boosted model gets raw inputs; trees handle missing values.**
+Imputing first would hide "never screened" and "no previous injury" as ordinary values.
+
+**D-061 · Mechanistic proxies carry no anatomical constants.**
+The brief asks for a patellar-tendon moment arm "scaled by segment length". Rather than invent
+or half-remember a scaling coefficient, each proxy is defined up to an unknown constant factor,
+which does not change how athletes rank and disappears under standardisation. Body-weight-
+normalised versions separate the effect of proportions from the effect of mass.
+
+**D-062 · Two body-ratio features were added to the pose pipeline** (thigh fraction of leg
+length; forefoot-to-heel lever ratio), plus segment inclination angles, because the proxies need
+them. They are excluded from asymmetry: they are not movement features.
+
+**D-063 · ACWR is not computed.** Per the brief; an exponentially weighted load and the change
+in hours against it are provided instead.
+
+**D-064 · Temporal hold-out drops training rows whose outcome window reaches the held-out
+period.** Otherwise held-out time would define training labels.
+
+### Findings (details in `docs/plans/M5_done.md`)
+- No exposure effect is recoverable from this simulation by design of the simulation.
+- Age and Moore maturity offset are collinear (VIF about 10) in the synthetic table.
+- One seed showed a spurious load / soft-tissue association; 12 seeds average to zero.
+
+### Fixes
+- Growth simulator: velocity-peak search now uses the highest interior local maximum.
+- Logistic hazard: solver seed fixed for reproducible fits.
+- Dates are converted to one timestamp resolution before joining; mixed resolutions made the
+  as-of joins fail.

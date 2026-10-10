@@ -4,7 +4,7 @@ Living document. **Update it in the same commit** as any change that creates, re
 or changes the responsibility of a file. The reasons behind changes go in
 `docs/CHANGELOG_REASONING.md`.
 
-Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M4).
+Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-10-10 (M5).
 
 ## Root
 
@@ -33,11 +33,12 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `pose/filter.yaml` | Gap filling, Butterworth order/cutoff, velocity units | ✅ |
 | `pose/tasks.yaml` | Screening task list, trial counts, events per task | ✅ |
 | `features/task_features.yaml` | Which angles/features are extracted, angle conventions, asymmetry index, trial-quality threshold | ✅ |
-| `features/mech.yaml` | Definitions of the mechanistic load proxies; flag that they are not force-plate validated | ✅ (used M5) |
-| `models/baselines.yaml` | Predictor sets for the three baseline models | ✅ (used M5) |
-| `models/hazard.yaml` | Prediction horizon, outcome groups, risk-set rules, hazard model variants, uncertainty options | ✅ (used M5) |
+| `features/mech.yaml` | Proxy definitions, the athlete-week columns they are computed from, and the not-validated flag | ✅ |
+| `features/person_period.yaml` | Exposure half-life, observed-velocity window, forbidden predictor names | ✅ |
+| `models/baselines.yaml` | Predictor sets and settings for the three baseline models | ✅ |
+| `models/hazard.yaml` | Prediction horizon, outcome groups, risk-set rules, hyperparameters of the logistic and boosted hazards, uncertainty options | ✅ |
 | `models/tcn_film.yaml`, `models/stgcn_film.yaml` | Encoder backbones and conditioning mode | ✅ (used M6) |
-| `eval/splits.yaml` | Grouped / nested / temporal / leave-one-academy-out split definitions | ✅ (used M5) |
+| `eval/splits.yaml` | Grouped / nested / temporal / leave-one-academy-out split definitions | ✅ (read by scripts from M7) |
 | `eval/metrics.yaml` | Primary metric, metric list, bootstrap settings, subgroups | ✅ (used M7) |
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations (names only, never results) | ✅ (used M6) |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
@@ -83,10 +84,18 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `validation/agreement.py` | Markerless-vs-mocap agreement: RMSE, MAE, Bland-Altman with confidence intervals and proportional bias, ICC(2,1), ICC(3,1), stratified agreement table | ✅ |
 | `validation/mocap_io.py` | TRC reader/writer, optional C3D reader, time alignment of mocap and markerless curves | ✅ (C3D path never run; markers-to-angles not implemented) |
 | `validation/plots.py` | Bland-Altman grid, RMSE by maturity stratum, curve overlay | ✅ |
-| `features/` | Mechanistic load proxies, exposure features, person-period (athlete-week) table | 🔲 (M5) |
-| `models/risk/`, `models/baselines.py` | Cause-specific discrete-time hazard models, baselines, uncertainty propagation | 🔲 (M5–M6) |
+| `features/person_period.py` | Athlete-week table: predictors known at the end of each week, 4-week cause-specific outcomes, risk set, censoring; leakage guard | ✅ |
+| `features/exposure.py` | Weekly hours, sessions, exponentially weighted load, change in hours | ✅ |
+| `features/mech_load.py` | Mechanistic load proxies (knee-extensor moment, patellar-tendon, Achilles), defined up to a constant; not force-plate validated | ✅ (not yet used in a fitted model) |
+| `models/tabular.py` | `HazardModel` (pipeline + input list + leakage check), natural-spline transformer, preprocessing fitted on training rows only, partial effect | ✅ |
+| `models/baselines.py` | Age-only, maturity + growth velocity, and screening-only logistic baselines | ✅ |
+| `models/risk/hazard_logit.py` | Elastic-net discrete-time logistic hazard with spline terms | ✅ |
+| `models/risk/hazard_xgb.py` | Gradient-boosted hazard with optional monotone constraints | ✅ |
+| `models/risk/hazard_neural.py`, `uncertainty.py` | Neural hazard head; uncertainty propagation | 🔲 (M6) |
 | `models/encoder/`, `models/pretrain/` | TCN / ST-GCN encoders, conditioning modes incl. FiLM, self-supervised pre-training | 🔲 (M6) |
-| `eval/` | Splits, metrics, calibration, decision curves, cluster bootstrap, subgroups | 🔲 (M5, M7) |
+| `eval/splits.py` | Athlete-grouped stratified folds, nested folds, temporal hold-out, leave-one-academy-out; overlap check | ✅ |
+| `eval/collinearity.py` | Variance inflation factors and a warning for redundant model inputs | ✅ |
+| `eval/metrics.py`, `calibration.py`, `dca.py`, `bootstrap.py`, `subgroups.py` | Discrimination, calibration, decision curves, cluster bootstrap, subgroup tables | 🔲 (M7) |
 | `explain/` | SHAP, integrated gradients, counterfactual sensitivity | 🔲 (M7) |
 | `recommend/` | Decision-support text rules with an evidence library | 🔲 (M8) |
 
@@ -131,7 +140,12 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_event_asymmetry.py` | Frame-wise left/right asymmetry, or asymmetry inside a single-leg trial (v2) | ✅ |
 | `test_pose_pipeline.py` | Features that miss the known truth; frame-rate-dependent velocity; silently dropped trials; keypoint files that point at video | ✅ |
 | `test_agreement.py` | Wrong Bland-Altman or ICC arithmetic (checked by hand and against pingouin); dropped thin strata; TRC parsing; time-alignment errors | ✅ |
-| Remaining v2 regression tests in brief §3 (scaler scope, leakage, growth-state collinearity, SHAP, API contract) | The specific v2 defects | 🔲 (M5–M7) |
+| `test_no_label_leakage.py` | Labels or truth as model inputs; predictors that depend on the future; labels not from diagnoses; athletes on both sides of a split (v2) | ✅ |
+| `test_scaler_fit_scope.py` | Preprocessing fitted on test rows or per clip (v2) | ✅ |
+| `test_growth_state_collinearity.py` | Growth inputs that are copies of one number (v2) | ✅ |
+| `test_person_period.py` | Wrong outcome window, risk set, carry-forward or censoring; exposure using future weeks; load-proxy arithmetic | ✅ |
+| `test_hazard_models.py` | Models that do not fit or predict; unfitted estimator exposed for explanation (v2); simulated effect directions not recovered | ✅ |
+| Remaining v2 regression tests in brief §3 (SHAP run, API contract) | The specific v2 defects | 🔲 (M7) |
 
 ## `docs/`, `paper/`, `data/`, `apps/`
 
@@ -140,7 +154,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/PROJECT_BRIEF.md` | The full specification (source of truth for scope) | ✅ |
 | `docs/FILE_MAP.md` | This file | ✅ |
 | `docs/CHANGELOG_REASONING.md` | Why each change and decision was made | ✅ |
-| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M4 |
+| `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M5 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
