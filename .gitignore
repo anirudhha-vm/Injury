@@ -38,7 +38,7 @@ dist/
 build/
 
 # --- Model weights (downloaded by a human, never committed) ---
-models/
+/models/
 *.task
 *.onnx
 
