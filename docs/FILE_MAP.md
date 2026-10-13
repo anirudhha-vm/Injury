@@ -44,7 +44,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
 | `dashboard.yaml` | Prompt thresholds, uncertainty draws, growth-curve grid, labels shown | ✅ (thresholds are placeholders) |
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations and the paired comparisons reported between them (names and switches only, never results) | ✅ |
-| `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
+| `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions except the cited mean age at PHV) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
 | `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
 
@@ -71,7 +71,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `io/deid.py` | Pseudonymous IDs, month-only DOB, identity map that can only be written outside the repo | ✅ |
 | `sim/growth_sim.py` | Preece–Baines height curves with an exactly known age at PHV; sitting height, leg length, mass; visit schedule; measurement error | ✅ |
 | `sim/movement_sim.py` | Session-level screening features with a per-athlete trait and maturity shift; synthetic drop-jump trials per session driven by the load proxy | ✅ |
-| `sim/injury_sim.py` | Weekly exposure and cause-specific injuries from a known hazard process with time-loss exclusion | ✅ |
+| `sim/injury_sim.py` | Weekly exposure (persistent within athlete, differing between athletes) and cause-specific injuries from a known hazard process with time-loss exclusion | ✅ |
 | `sim/skeleton_sim.py` | Stylised synthetic skeleton sequences (drop jump, single-leg squat) with exactly known angles and event frames, for testing the pose pipeline | ✅ |
 | `sim/truth.py` | True 4-week event probability per athlete-week of a synthetic cohort, for scoring only | ✅ |
 | `sim/cohort.py` | Assembles schema-shaped tables plus separate truth tables; tags everything synthetic; writes parquet | ✅ |
@@ -158,7 +158,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `conftest.py` | Shared fixtures: the default synthetic cohort and configs | ✅ |
 | `test_maturity_equations.py` | Wrong equation arithmetic; mixed-up families; implausible or wrong-unit inputs; ungated Mirwald girls | ✅ |
 | `test_growth_sim.py` | Non-monotone height; true APHV not at the velocity peak; implausible body proportions | ✅ |
-| `test_injury_sim.py` | Injuries during time-loss; hazards not following the stated effect directions | ✅ |
+| `test_injury_sim.py` | Injuries during time-loss; hazards not following the stated effect directions; training load that does not persist or that shifts the average | ✅ |
 | `test_cohort.py` | Non-reproducible cohorts; unlabelled synthetic data; truth leaking into observable tables | ✅ |
 | `test_schema.py` | DDL and models drifting apart; full DOB, non-UUID IDs, video paths, undiagnosed injuries | ✅ |
 | `test_ingest_qc_deid.py` | Silent row drops; partial loads; synthetic/real mixing; QC editing data; identity map inside the repo | ✅ |

@@ -2,7 +2,7 @@
 #
 # IMPORTANT: every numeric value below is an ASSUMPTION chosen to give plausible-looking data
 # for pipeline development. None is an estimate from our cohort, and none has been checked
-# against a source. TODO(human): before the simulation study is written up, replace or cite
+# against a source, except the mean age at PHV (cited below). TODO(human): before the simulation study is written up, replace or cite
 # each block (growth parameters, measurement error, hazards).
 synthetic: true
 seed: 20261009
@@ -17,12 +17,14 @@ proportion_right_dominant: 0.9
 
 growth:
   model: preece_baines_1   # h(t) = h1 - 2(h1 - h_theta) / (exp(s0(t-theta)) + exp(s1(t-theta)))
-  aphv_years:              # target distribution of TRUE age at PHV (from the brief)
-    # Decision 2026-10-10: Indian reference studies put PHV near 10.5-11 y (girls) and
-    # 12-13.5 y (boys). Switch to those, with citations, at the next full re-run of the studies;
-    # not changed now because saved posteriors and the dashboard depend on this cohort.
-    female: {mean: 12.0, sd: 1.0}
-    male: {mean: 14.0, sd: 1.0}
+  aphv_years:              # target distribution of TRUE age at PHV
+    # Means: peak-centred height velocity in Indian children, 10.8 y (girls) and 13.4 y (boys),
+    # Khadilkar et al., Indian Pediatr 2019 (n = 2,949, affluent urban schools), as reported in
+    # the accompanying commentary. Other Indian cohorts put the peak up to a year earlier in
+    # boys (Sabinkar et al., Cureus 2023). SDs are not reported there: ASSUMPTION.
+    # Until 2026-10-13 these were 12.0 and 14.0 (the brief's values).
+    female: {mean: 10.8, sd: 1.0}
+    male: {mean: 13.4, sd: 1.0}
   adult_height_cm:         # h1
     female: {mean: 160.0, sd: 6.0}
     male: {mean: 173.0, sd: 6.5}
@@ -86,6 +88,11 @@ exposure:
     at_age_8: 4.0
     slope_per_year: 0.6
     gamma_shape: 8.0
+    max_weekly: 30.0         # ASSUMPTION: cap; keeps sessions per week inside the schema range
+  persistence:               # ASSUMPTION: mean-one multiplier of expected weekly hours
+    athlete_sd_log: 0.25     # stable between-athlete differences in usual load
+    week_sd_log: 0.30        # week-to-week deviation around the athlete's usual load
+    week_autocorrelation: 0.7
   match_hours_fraction: 0.2
   spike_probability: 0.08
   spike_multiplier: 1.8

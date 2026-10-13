@@ -751,3 +751,28 @@ noise. The comparisons are fixed in config before the re-run so they are not cho
 seeing results; all are exploratory. `--report-from` recomputes the tables from saved
 predictions, so changing the metric list does not cost another two-hour fit.
 Not yet re-run: run `ablation-b77476353614` predates this change and has no predictions.
+
+**D-110 · Simulated age at PHV now uses Indian reference means: 10.8 y (girls), 13.4 y (boys).**
+Source: the peak-centred height-velocity analysis of Khadilkar et al., *Indian Pediatr* 2019
+(n = 2,949, affluent urban schools in Pune and Delhi), as reported in the accompanying
+commentary. Other Indian cohorts place the boys' peak up to a year earlier (Sabinkar et al.,
+*Cureus* 2023: 12-12.9 y), so 13.4 is at the late end of the published range. The SD of 1.0 y
+is still an assumption: neither source reports one. The brief's 12.0 and 14.0 are replaced
+(deviation from the brief, decided in D-107). Consequence: with baseline ages 8-17 y, more
+girls are several years past PHV, where the growth twin is less well calibrated.
+
+**D-111 · Simulated training load persists.** Expected weekly hours are multiplied by a
+mean-one factor: a stable per-athlete level (log SD 0.25) and a first-order autoregressive
+weekly deviation (log SD 0.30, autocorrelation 0.7). All three are assumptions. Before, each
+week was drawn independently, so past load carried no information about the outcome window and
+no exposure effect could be tested (D-107). Weekly training hours are capped at 30, since the
+heavier tail otherwise produced session counts outside the schema range.
+
+**D-112 · Fragile test replaced.** `test_scaler_fit_scope` asserted that the training-fold
+median of weekly hours differs from the full-data median; hours are recorded to 0.1 h, so the
+two can coincide (they did on the new cohort). It now compares the fitted scale, which cannot.
+The guard itself (changing held-out rows cannot change the fitted model) is unchanged.
+
+**Invalidated by D-110/D-111:** every synthetic run made before 2026-10-13
+(`simgrowth-16fbcf9f034a`, `ablation-b77476353614`, the dashboard bundle) describes the old
+cohort. The numbers in `docs/plans/M2_done.md` and `M6_done.md` are for that cohort.

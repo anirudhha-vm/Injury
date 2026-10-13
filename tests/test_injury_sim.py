@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import numpy as np
@@ -101,6 +102,33 @@ def test_exposure_rises_with_age_and_spikes(cohort_config: dict[str, Any]) -> No
         cohort_config["exposure"]["spike_probability"], abs=0.01
     )
     assert np.all(young.hours_match >= 0)
+
+
+def _lag_one_correlation(hours: np.ndarray) -> float:
+    """Correlation between consecutive weeks after removing each athlete's own mean."""
+    centred = hours - hours.mean(axis=1, keepdims=True)
+    return float(np.corrcoef(centred[:, :-1].ravel(), centred[:, 1:].ravel())[0, 1])
+
+
+def test_training_load_persists_within_athlete(cohort_config: dict[str, Any]) -> None:
+    """A heavy week tends to follow a heavy week, and some athletes train more than others."""
+    age = np.full((3000, 52), 12.0)
+    config = copy.deepcopy(cohort_config["exposure"])
+    spec = config["persistence"]
+    persistent = injury_sim.sample_exposure(make_rng(3, "e"), age, config).hours_training
+    config["persistence"] = {"athlete_sd_log": 0.0, "week_sd_log": 0.0, "week_autocorrelation": 0.0}
+    independent = injury_sim.sample_exposure(make_rng(3, "e"), age, config).hours_training
+
+    assert abs(_lag_one_correlation(independent)) < 0.02
+    assert _lag_one_correlation(persistent) > 0.1
+    # Athletes differ in their usual load by about the configured amount (log scale).
+    usual = np.log(persistent.mean(axis=1))
+    assert usual.std() == pytest.approx(spec["athlete_sd_log"], rel=0.25)
+    assert np.log(independent.mean(axis=1)).std() < 0.1
+    # Persistence redistributes load; it does not change the average.
+    assert persistent.mean() == pytest.approx(independent.mean(), rel=0.03)
+    # The weekly deviation is stationary: no drift in spread from first to last week.
+    assert persistent[:, 0].std() == pytest.approx(persistent[:, -1].std(), rel=0.1)
 
 
 def test_movement_latent_shifts_with_maturity(cohort_config: dict[str, Any]) -> None:

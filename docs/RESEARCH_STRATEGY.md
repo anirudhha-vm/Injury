@@ -132,10 +132,10 @@ the growth-related outcome group. Depends on which academies agree.
 
 ## Decision 7 — Simulation study
 
-- Replace the brief's assumed age at PHV (12 and 14 y) with Indian reference values at the next
-  full re-run, and cite them.
-- Make simulated training load persist from week to week; at present load in one week says
-  nothing about the next, so no exposure effect can be tested.
+- Done 2026-10-13: age at PHV in the simulation uses Indian reference means, 10.8 y (girls)
+  and 13.4 y (boys), from Khadilkar et al. 2019; the brief's 12 and 14 y are replaced.
+- Done 2026-10-13: simulated training load persists from week to week and differs between
+  athletes, so an exposure effect can be tested.
 - Report the simulation at several cohort sizes, to show how performance depends on the number
   of events. That figure makes the sample-size argument visually.
 

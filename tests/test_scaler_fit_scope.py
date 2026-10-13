@@ -52,7 +52,9 @@ def test_statistics_equal_training_fold_statistics(
     stats = _fitted_statistics(model)
     # hours_total is the only plain numeric input: its imputation value is the TRAINING median.
     assert stats["numeric_median"][0] == pytest.approx(train["hours_total"].median())
-    assert stats["numeric_median"][0] != pytest.approx(frame["hours_total"].median(), abs=1e-12)
+    # Hours are recorded to 0.1 h, so the two medians can coincide; the spread cannot.
+    assert stats["numeric_scale"][0] == pytest.approx(train["hours_total"].std(ddof=0))
+    assert stats["numeric_scale"][0] != pytest.approx(frame["hours_total"].std(ddof=0), abs=1e-12)
     spline_columns = ["age", "moore_maturity_offset", "obs_leg_length_velocity"]
     np.testing.assert_allclose(stats["spline_median"], train[spline_columns].median().to_numpy())
     # Spline knots are training quantiles of the (imputed) training column.

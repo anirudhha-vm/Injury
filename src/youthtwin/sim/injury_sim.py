@@ -49,16 +49,39 @@ class Exposure:
     spike: BoolArray
 
 
+def _persistent_multiplier(
+    rng: np.random.Generator, shape: tuple[int, ...], config: Mapping[str, Any]
+) -> FloatArray:
+    """Mean-one multiplier of expected hours, shape (n_athletes, n_weeks).
+
+    The log multiplier is a stable per-athlete level plus a stationary first-order
+    autoregressive weekly deviation, so heavy weeks cluster and athletes differ in usual load.
+    """
+    n_athletes, n_weeks = shape
+    athlete_sd, week_sd = float(config["athlete_sd_log"]), float(config["week_sd_log"])
+    rho = float(config["week_autocorrelation"])
+    level = rng.normal(0.0, 1.0, n_athletes) * athlete_sd
+    shocks = rng.normal(0.0, 1.0, shape) * week_sd
+    deviation = np.empty(shape, dtype=np.float64)
+    deviation[:, 0] = shocks[:, 0]
+    for week in range(1, n_weeks):
+        deviation[:, week] = rho * deviation[:, week - 1] + np.sqrt(1 - rho**2) * shocks[:, week]
+    variance = athlete_sd**2 + week_sd**2
+    return np.asarray(np.exp(level[:, None] + deviation - variance / 2.0), dtype=np.float64)
+
+
 def sample_exposure(
     rng: np.random.Generator, age: FloatArray, config: Mapping[str, Any]
 ) -> Exposure:
-    """Weekly hours rising with age, gamma-distributed, with occasional spikes."""
+    """Weekly hours rising with age, persistent within athlete, with occasional spikes."""
     t = config["training_hours"]
     mean = t["at_age_8"] + t["slope_per_year"] * (age - 8.0)
+    mean = mean * _persistent_multiplier(rng, age.shape, config["persistence"])
     shape = t["gamma_shape"]
     hours = rng.gamma(shape, mean / shape)
     spike = rng.random(age.shape) < config["spike_probability"]
     hours = np.where(spike, hours * config["spike_multiplier"], hours)
+    hours = np.minimum(hours, float(t["max_weekly"]))
     match = hours * config["match_hours_fraction"] * rng.uniform(0.5, 1.5, age.shape)
     return Exposure(np.asarray(hours, dtype=np.float64), np.asarray(match, dtype=np.float64), spike)
 
