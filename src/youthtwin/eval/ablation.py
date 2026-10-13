@@ -2,7 +2,9 @@
 
 Every configuration in ``configs/eval/ablations.yaml`` is fitted on the training athletes of
 each fold and scored on that fold's held-out athletes; out-of-fold predictions are pooled.
-The output is one tidy table with a run ID per row. Nothing in the table is typed by hand.
+The output is one tidy table with a run ID per row, plus the out-of-fold predictions themselves
+(one ``risk_<name>`` column per configuration) so that intervals and paired comparisons can be
+computed by resampling athletes. Nothing in the tables is typed by hand.
 
 Configurations 1-3 are the logistic baselines; 4-9 are neural hazards that differ only in how
 the growth state conditions the movement encoder, then add mechanistic proxies and uncertainty
@@ -12,13 +14,15 @@ propagation.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from youthtwin.eval import metrics, splits
+from youthtwin.eval import metrics, report, splits
+from youthtwin.eval.predictions import RISK_PREFIX
 from youthtwin.features.mech_load import MECH_PREFIX
 from youthtwin.growth.growth_state import SitarPosterior
 from youthtwin.models import dataset
@@ -43,6 +47,17 @@ RESULT_COLUMNS = [
     "synthetic",
     "note",
 ]
+INTERVAL_LOW_PREFIX = "interval_low_"
+INTERVAL_HIGH_PREFIX = "interval_high_"
+
+
+@dataclass(frozen=True)
+class AblationRun:
+    """``results``: one row per configuration and metric. ``predictions``: one row per
+    athlete-week with the outcome, the fold and every configuration's out-of-fold risk."""
+
+    results: pd.DataFrame
+    predictions: pd.DataFrame
 
 
 def _baseline_predictions(
@@ -156,8 +171,8 @@ def run_ablation(
     n_folds: int,
     seed: int,
     true_risk: FloatArray | None = None,
-) -> pd.DataFrame:
-    """Run every configuration; return the tidy results table.
+) -> AblationRun:
+    """Run every configuration; return the tidy results table and the predictions.
 
     ``true_risk`` (synthetic cohorts only) is the known event probability per row. If given,
     the table also reports how close predictions are to it and, where risk intervals exist,
@@ -174,6 +189,19 @@ def run_ablation(
     )
     synthetic = bool(frame["synthetic"].all())
     outcome = frame[label].to_numpy()
+    fold_of_row = np.full(len(frame), -1)
+    for k, fold in enumerate(folds):
+        fold_of_row[fold.test] = k
+    predicted: dict[str, Any] = {
+        "athlete_id": frame["athlete_id"].to_numpy(),
+        "week_start": frame["week_start"].to_numpy(),
+        "outcome": outcome,
+        "label": label,
+        "fold": fold_of_row,
+        "synthetic": frame["synthetic"].to_numpy(),
+    }
+    if true_risk is not None:
+        predicted["true_risk"] = true_risk
     rows: list[dict[str, Any]] = []
     pretrained_cache: dict[int, Any] = {}
     for spec in configs["ablations"]["ablations"]:
@@ -186,6 +214,10 @@ def run_ablation(
             risk, spread, low, high, notes = _neural_predictions(
                 spec, frame, label, folds, sequences, posteriors, configs, seed, pretrained_cache
             )
+        predicted[f"{RISK_PREFIX}{spec['name']}"] = risk
+        if np.isfinite(low).any():
+            predicted[f"{INTERVAL_LOW_PREFIX}{spec['name']}"] = low
+            predicted[f"{INTERVAL_HIGH_PREFIX}{spec['name']}"] = high
         values = {
             "auc": metrics.auc(outcome, risk),
             "brier": metrics.brier_score(outcome, risk),
@@ -220,4 +252,36 @@ def run_ablation(
                     "note": "; ".join(notes),
                 }
             )
-    return pd.DataFrame(rows, columns=RESULT_COLUMNS)
+    return AblationRun(pd.DataFrame(rows, columns=RESULT_COLUMNS), pd.DataFrame(predicted))
+
+
+def ablation_report(
+    predictions: pd.DataFrame,
+    ablations_config: Mapping[str, Any],
+    metrics_config: Mapping[str, Any],
+    *,
+    seed: int,
+) -> dict[str, pd.DataFrame]:
+    """Intervals for every configuration and the pre-specified paired comparisons.
+
+    Both resample whole athletes (``eval/bootstrap.py``). ``performance`` has every configured
+    metric per configuration; ``differences`` has one block per entry of ``comparisons`` in
+    ``configs/eval/ablations.yaml``, each computed on the same resampled athletes for both
+    configurations.
+    """
+    shared = [c for c in predictions.columns if not c.startswith(RISK_PREFIX)]
+    differences = []
+    for pair in ablations_config["comparisons"]:
+        columns = [f"{RISK_PREFIX}{pair['model']}", f"{RISK_PREFIX}{pair['reference']}"]
+        absent = [c for c in columns if c not in predictions.columns]
+        if absent:
+            raise KeyError(f"Comparison names a configuration that was not run: {absent}")
+        differences.append(
+            report.difference_table(
+                predictions[shared + columns], pair["reference"], metrics_config, seed=seed
+            )
+        )
+    return {
+        "performance": report.performance_table(predictions, metrics_config, seed=seed),
+        "differences": pd.concat(differences, ignore_index=True),
+    }

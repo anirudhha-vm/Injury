@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from youthtwin.eval import metrics
-from youthtwin.eval.ablation import RESULT_COLUMNS, run_ablation
+from youthtwin.eval.ablation import RESULT_COLUMNS, ablation_report, run_ablation
 from youthtwin.features.person_period import build_person_period
 from youthtwin.growth import splines
 from youthtwin.growth.growth_state import SitarPosterior
@@ -469,7 +469,7 @@ def test_ablation_grid_runs_end_to_end(small_study: dict[str, Any]) -> None:
                 athlete, twin.loc[rows, "age"].to_numpy()
             ).items():
                 twin.loc[rows, f"twin_{name}"] = values
-    results = run_ablation(
+    run = run_ablation(
         twin,
         small_study["sequences"],
         label="y_all_non_contact",
@@ -478,6 +478,7 @@ def test_ablation_grid_runs_end_to_end(small_study: dict[str, Any]) -> None:
         n_folds=2,
         seed=0,
     )
+    results = run.results
     assert list(results.columns) == RESULT_COLUMNS
     assert sorted(results["ablation_id"].unique()) == list(range(1, 10))
     assert results["run_id"].nunique() == 9 and results["run_id"].str.startswith("ablation-").all()
@@ -492,6 +493,54 @@ def test_ablation_grid_runs_end_to_end(small_study: dict[str, Any]) -> None:
     notes = results.drop_duplicates("ablation_id").set_index("ablation_id")["note"]
     assert "mechanistic proxies unavailable" in notes[8]
     assert (notes[[1, 2, 3, 4, 5, 6, 7]] == "").all()
+
+    # The out-of-fold predictions behind the table: one row per athlete-week, one risk column
+    # per configuration, and the metrics in the table are recomputable from them.
+    predictions = run.predictions
+    names = [a["name"] for a in configs["ablations"]["ablations"]]
+    assert len(predictions) == len(twin)
+    assert (predictions["athlete_id"].to_numpy() == twin["athlete_id"].to_numpy()).all()
+    assert [c for c in predictions.columns if c.startswith("risk_")] == [f"risk_{n}" for n in names]
+    assert predictions[[f"risk_{n}" for n in names]].notna().all().all()
+    assert set(predictions["fold"]) == {0, 1}
+    assert predictions.groupby("athlete_id")["fold"].nunique().max() == 1
+    assert "true_risk" not in predictions.columns
+    assert wide.loc[7, "brier"] == pytest.approx(
+        np.mean((predictions["risk_film_proposed"] - predictions["outcome"]) ** 2)
+    )
+    # Only the uncertainty-propagating configuration carries a risk interval.
+    assert [c for c in predictions.columns if c.startswith("interval_low_")] == [
+        "interval_low_film_mech_uncertainty"
+    ]
+    assert (
+        predictions["interval_low_film_mech_uncertainty"]
+        <= predictions["interval_high_film_mech_uncertainty"]
+    ).all()
+
+    metrics_config = load_config("eval/metrics.yaml")
+    metrics_config["bootstrap"]["n_resamples"] = 20
+    metrics_config["metrics"] = ["time_dependent_auc_4wk", "brier_score"]
+    tables = ablation_report(predictions, configs["ablations"], metrics_config, seed=0)
+    assert set(tables["performance"]["model"]) == set(names)
+    pairs = [(c["model"], c["reference"]) for c in configs["ablations"]["comparisons"]]
+    differences = tables["differences"]
+    assert (
+        list(dict.fromkeys(zip(differences["model"], differences["reference"], strict=True)))
+        == pairs
+    )
+    assert (differences["ci_low"] <= differences["ci_high"]).all()
+    assert differences["synthetic"].all()
+    assert (differences["n_athletes"] == twin["athlete_id"].nunique()).all()
+    # Identical inputs give identical predictions, so that difference is exactly zero.
+    same = differences[differences["model"] == "film_plus_mech_proxies"]
+    assert (same["difference"] == 0).all() and not same["interval_excludes_zero"].any()
+    with pytest.raises(KeyError, match="not run"):
+        ablation_report(
+            predictions.drop(columns="risk_late_fusion"),
+            configs["ablations"],
+            metrics_config,
+            seed=0,
+        )
 
 
 # ----------------------------------------------------------------------------- known true risk
@@ -533,7 +582,7 @@ def test_ablation_reports_agreement_with_true_risk(small_study: dict[str, Any]) 
         "encoder": load_config("models/tcn_film.yaml"),
     }
     truth = true_window_risk(small_study["cohort"], frame, "y_all_non_contact", 4)
-    results = run_ablation(
+    run = run_ablation(
         frame,
         small_study["sequences"],
         label="y_all_non_contact",
@@ -542,6 +591,8 @@ def test_ablation_reports_agreement_with_true_risk(small_study: dict[str, Any]) 
         seed=0,
         true_risk=truth,
     )
+    results = run.results
+    assert (run.predictions["true_risk"].to_numpy() == truth).all()
     values = results.set_index("metric")["value"]
     assert {"mae_vs_true_risk", "correlation_with_true_risk"} <= set(values.index)
     assert 0 < values["mae_vs_true_risk"] < 0.1

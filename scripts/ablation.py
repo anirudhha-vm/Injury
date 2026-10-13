@@ -3,8 +3,11 @@
 Generates the cohort from its seed, simulates and processes each session's trials, builds the
 athlete-week table (with growth-twin features if ``--posterior-dir`` points at saved posteriors
 from ``scripts/sim_study_growth.py`` or ``scripts/fit_growth.py``) and runs every configuration
-in ``configs/eval/ablations.yaml``. Output: ``outputs/ablation/<run_id>/results.csv`` with a
-provenance record. SYNTHETIC: these numbers are a pipeline check, not findings.
+in ``configs/eval/ablations.yaml``. Output in ``outputs/ablation/<run_id>/``: ``results.csv``,
+the out-of-fold ``predictions.parquet``, and ``performance.csv`` / ``differences.csv`` with
+athlete-level bootstrap intervals, plus a provenance record. ``--report-from <run dir>``
+recomputes the two interval tables from saved predictions without refitting anything.
+SYNTHETIC: these numbers are a pipeline check, not findings.
 """
 
 from __future__ import annotations
@@ -13,10 +16,11 @@ import json
 import time
 from pathlib import Path
 
+import pandas as pd
 import torch
 import typer
 
-from youthtwin.eval.ablation import run_ablation
+from youthtwin.eval.ablation import ablation_report, run_ablation
 from youthtwin.features.mech_load import add_mech_proxies
 from youthtwin.features.person_period import build_person_period
 from youthtwin.growth.growth_state import SitarPosterior
@@ -25,6 +29,22 @@ from youthtwin.sim.cohort import generate_cohort
 from youthtwin.sim.truth import true_window_risk
 from youthtwin.utils.config import load_config, repo_root
 from youthtwin.utils.provenance import config_hash, run_metadata
+
+
+def _write_report(predictions: pd.DataFrame, target: Path, seed: int) -> None:
+    tables = ablation_report(
+        predictions,
+        load_config("eval/ablations.yaml"),
+        load_config("eval/metrics.yaml"),
+        seed=seed,
+    )
+    for name, table in tables.items():
+        table.to_csv(target / f"{name}.csv", index=False)
+    shown = tables["differences"][
+        ["model", "reference", "metric", "difference", "ci_low", "ci_high"]
+    ]
+    typer.echo("\nPaired differences (model minus reference), athlete-level bootstrap:")
+    typer.echo(shown.round(4).to_string(index=False))
 
 
 def main(
@@ -38,7 +58,11 @@ def main(
     seed: int = 0,
     threads: int = 4,
     out_dir: Path | None = None,
+    report_from: Path | None = None,
 ) -> None:
+    if report_from is not None:
+        _write_report(pd.read_parquet(report_from / "predictions.parquet"), report_from, seed)
+        return
     torch.set_num_threads(threads)  # small networks: more threads only add overhead
     cohort_config = load_config("sim/cohort.yaml")
     if n_athletes is not None:
@@ -92,7 +116,7 @@ def main(
     )
     frame = add_mech_proxies(period.frame, load_config("features/mech.yaml"))
     truth = true_window_risk(cohort, frame, label, period.horizon_weeks)
-    results = run_ablation(
+    run = run_ablation(
         frame,
         sequences,
         label=label,
@@ -102,7 +126,9 @@ def main(
         seed=seed,
         true_risk=truth,
     )
+    results = run.results
     results.to_csv(target / "results.csv", index=False)
+    run.predictions.to_parquet(target / "predictions.parquet", index=False)
     record = {
         "run_id": run_id,
         **metadata,
@@ -115,6 +141,7 @@ def main(
     typer.echo(wide.round(4).to_string())
     for note in sorted(set(results["note"]) - {""}):
         typer.echo(f"note: {note}")
+    _write_report(run.predictions, target, seed)
 
 
 if __name__ == "__main__":

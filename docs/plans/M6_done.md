@@ -56,8 +56,9 @@ prevalence in every configuration.
   nearly linear model.
 
 ## Not done
-- Confidence intervals and paired comparisons for the ablation: the runner saves metrics, not
-  the out-of-fold predictions that the athlete-level bootstrap needs.
+- Confidence intervals and paired comparisons for the ablation: the code exists since
+  2026-10-13 (D-109), but the run reported above predates it and has no saved predictions.
+  The table above still has no intervals until the grid is re-run.
 - The ST-GCN backbone was tested but not run through the full grid.
 - Mechanistic proxies in a fitted model.
 - Contrastive pre-training (only masked reconstruction is implemented); expert movement-quality

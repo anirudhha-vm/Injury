@@ -95,6 +95,10 @@ def test_ablation_grid_has_no_expected_results() -> None:
     assert [a["id"] for a in ablations["ablations"]] == list(range(1, 10))
     forbidden = ("auc", "expected", "result", "score")
     assert not [k for k in _walk_keys(ablations) if any(word in k.lower() for word in forbidden)]
+    # Every paired comparison names two different configurations of the grid.
+    names = {a["name"] for a in ablations["ablations"]}
+    for pair in ablations["comparisons"]:
+        assert {pair["model"], pair["reference"]} <= names and pair["model"] != pair["reference"]
 
 
 def test_integrity_switches() -> None:

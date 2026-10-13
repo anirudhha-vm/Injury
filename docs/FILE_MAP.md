@@ -43,7 +43,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/sample_size.yaml` | Sample-size planning scenarios (event proportions, parameter counts, cohort sizes) | ✅ |
 | `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
 | `dashboard.yaml` | Prompt thresholds, uncertainty draws, growth-curve grid, labels shown | ✅ (thresholds are placeholders) |
-| `eval/ablations.yaml` | The nine pre-registered ablation configurations (names and switches only, never results) | ✅ |
+| `eval/ablations.yaml` | The nine pre-registered ablation configurations and the paired comparisons reported between them (names and switches only, never results) | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
 | `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
@@ -109,7 +109,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/sample_size.py` | Riley et al. sample-size criteria for a binary-outcome prediction model, and the number of parameters a cohort supports | ✅ |
 | `eval/collinearity.py` | Variance inflation factors and a warning for redundant model inputs | ✅ |
 | `eval/metrics.py` | AUC (time-dependent at the horizon), PR-AUC, Brier score, sensitivity/specificity at pre-specified thresholds | ✅ |
-| `eval/ablation.py` | Runs the nine pre-registered configurations with athlete-grouped cross-validation; tidy results with run IDs; optional scoring against known true risk | ✅ |
+| `eval/ablation.py` | Runs the nine pre-registered configurations with athlete-grouped cross-validation; tidy results with run IDs plus the out-of-fold predictions; optional scoring against known true risk; `ablation_report` gives athlete-level bootstrap intervals and the configured paired differences | ✅ |
 | `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
 | `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
 | `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
@@ -137,7 +137,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `sim_study_growth.py` | Growth-twin simulation study on the synthetic cohort: coverage and error vs truth and vs Moore; writes scores, summary, posteriors, watermarked figure to `outputs/` (`make sim-study-growth`) | ✅ |
 | `run_pose.py` | Local videos + manifest → keypoint files, task-feature table and exclusion log | ⚠️ written, never run on real video |
 | `validate_markerless.py` | Paired markerless/mocap table → agreement tables and figures in `outputs/validation/` | ✅ (run on made-up pairs only) |
-| `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `outputs/ablation/<run_id>/results.csv` | ✅ |
+| `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `results.csv`, `predictions.parquet`, `performance.csv` and `differences.csv` to `outputs/ablation/<run_id>/`; `--report-from` recomputes the interval tables from saved predictions | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |

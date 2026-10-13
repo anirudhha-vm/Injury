@@ -131,6 +131,11 @@ def main(
         source = {"source": "scripts/ablation.py", **_record(ablation)}
         _write_table(pd.read_csv(ablation / "results.csv"), tables / "ablation.csv", source)
         written.append("tables/ablation.csv")
+        for name in ("performance", "differences"):  # absent in runs made before D-109
+            if (ablation / f"{name}.csv").is_file():
+                table = pd.read_csv(ablation / f"{name}.csv")
+                _write_table(table, tables / f"ablation_{name}.csv", source)
+                written.append(f"tables/ablation_{name}.csv")
 
     growth = growth_dir or _latest("sim_study_growth")
     if growth is not None:

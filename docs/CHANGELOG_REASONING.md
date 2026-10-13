@@ -736,3 +736,18 @@ eight chains finished, against 40 and 90 minutes for the earlier models. The add
 ages where the cohort has few measurements, leaving that part of the curve barely determined.
 No result was obtained, so nothing about coverage can be claimed for it. The pre-registered
 restriction of growth-twin uncertainty claims to within three years of PHV (H1b) stands.
+
+---
+
+## Ablation intervals (2026-10-13)
+
+**D-109 · The ablation runner now keeps its out-of-fold predictions (closes D-108).**
+`run_ablation` returns the results table and a predictions table (one row per athlete-week, one
+`risk_<name>` column per configuration, the fold, the true risk on synthetic cohorts, and the
+risk interval where one exists). `ablation_report` computes athlete-level bootstrap intervals
+for every configuration and paired differences for the comparisons listed under `comparisons`
+in `configs/eval/ablations.yaml`. Why: R-009 could not say whether any ordering was more than
+noise. The comparisons are fixed in config before the re-run so they are not chosen after
+seeing results; all are exploratory. `--report-from` recomputes the tables from saved
+predictions, so changing the metric list does not cost another two-hour fit.
+Not yet re-run: run `ablation-b77476353614` predates this change and has no predictions.

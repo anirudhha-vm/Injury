@@ -10,3 +10,12 @@ ablations:
   - {id: 7, name: film_proposed, conditioning: film}
   - {id: 8, name: film_plus_mech_proxies, conditioning: film, mech_proxies: true}
   - {id: 9, name: film_mech_uncertainty, conditioning: film, mech_proxies: true, propagate_uncertainty: true}
+# Paired comparisons (model minus reference) reported with athlete-level bootstrap intervals.
+# All exploratory (paper/preregistration.md, H3 and the ablation set).
+comparisons:
+  - {model: maturity_offset_plus_growth_velocity, reference: age_only}
+  - {model: film_proposed, reference: movement_encoder_only}
+  - {model: film_proposed, reference: concat_v2_design}
+  - {model: film_proposed, reference: late_fusion}
+  - {model: film_plus_mech_proxies, reference: film_proposed}
+  - {model: film_mech_uncertainty, reference: film_plus_mech_proxies}
