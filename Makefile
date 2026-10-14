@@ -1,4 +1,4 @@
-.PHONY: setup test test-slow lint gate sim sim-study-growth evaluate ablation dashboard-data dashboard pipeline methods paper-figs todo
+.PHONY: setup test test-slow lint gate sim sim-study-growth sim-study-sizes evaluate ablation dashboard-data dashboard pipeline methods paper-figs todo
 
 # A system PYTHONPATH (e.g. from a ROS install) leaks foreign pytest plugins into the venv.
 unexport PYTHONPATH
@@ -30,6 +30,9 @@ sim:  ## generate the synthetic cohort into data/synthetic/ (flagged synthetic=T
 
 sim-study-growth:  ## simulation study for the growth twin (SYNTHETIC; tens of minutes)
 	uv run python scripts/sim_study_growth.py
+
+sim-study-sizes:  ## performance of the tabular models against cohort size (SYNTHETIC)
+	uv run python scripts/sim_study_sizes.py
 
 evaluate:  ## out-of-fold evaluation of the tabular models (SYNTHETIC)
 	uv run python scripts/evaluate.py

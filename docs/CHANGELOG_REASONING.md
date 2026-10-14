@@ -776,3 +776,15 @@ The guard itself (changing held-out rows cannot change the fitted model) is unch
 **Invalidated by D-110/D-111:** every synthetic run made before 2026-10-13
 (`simgrowth-16fbcf9f034a`, `ablation-b77476353614`, the dashboard bundle) describes the old
 cohort. The numbers in `docs/plans/M2_done.md` and `M6_done.md` are for that cohort.
+
+**D-113 · Cohort-size simulation study added (`make sim-study-sizes`).**
+Decision 7 of the research strategy asked for the simulation at several cohort sizes. For each
+size in `configs/eval/cohort_size_study.yaml`, independent synthetic cohorts are generated and
+the tabular models are evaluated exactly as in the main evaluation; the spread across cohorts
+is reported, together with the AUC of the known true risk as a ceiling. Replicate cohorts are
+used instead of a bootstrap of one cohort because the question is what a *new* cohort of that
+size would show. The neural models are left out: one grid takes over two hours.
+Caveat to carry into any write-up: the simulation injures about 19% of athletes per season with
+a growth-related injury, several times the published 4 per 100 athlete-seasons, so the same
+number of athletes in a real cohort would yield far fewer events. The figure therefore labels
+each size with its number of injured athletes, which is the quantity that transfers.

@@ -14,7 +14,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `README.md` | Entry point: status, quick start, pointers | ✅ |
 | `pyproject.toml` | Package metadata, dependencies, and ruff / mypy / pytest / coverage settings | ✅ |
 | `uv.lock` | Exact pinned versions of every dependency | ✅ |
-| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`, `evaluate`, `ablation`, `dashboard-data`, `dashboard`, `paper-figs`, `pipeline` | ✅ |
+| `Makefile` | The only commands people need: `setup`, `test`, `test-slow`, `lint`, `gate`, `todo`, `sim`, `sim-study-growth`, `sim-study-sizes`, `evaluate`, `ablation`, `dashboard-data`, `dashboard`, `paper-figs`, `pipeline` | ✅ |
 | `.pre-commit-config.yaml` | Blocks video files, `.env` files, and Supabase secret keys from being committed; runs ruff and the paper results guard | ✅ |
 | `.github/workflows/ci.yml` | CI: lint + tests (blocking), tracked-video check, human gates (visible, non-blocking) | ✅ |
 | `.gitignore` | Keeps raw video, data, secrets, and run outputs out of git | ✅ |
@@ -44,6 +44,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/metrics.yaml` | Metric list, thresholds (none pre-specified yet), decision-curve range, calibration settings, bootstrap size, subgroup definitions, what-if settings | ✅ |
 | `dashboard.yaml` | Prompt thresholds, uncertainty draws, growth-curve grid, labels shown | ✅ (thresholds are placeholders) |
 | `eval/ablations.yaml` | The nine pre-registered ablation configurations and the paired comparisons reported between them (names and switches only, never results) | ✅ |
+| `eval/cohort_size_study.yaml` | Cohort sizes, replicates and models of the cohort-size simulation study (never results) | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions except the cited mean age at PHV) | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
 | `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
@@ -110,6 +111,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/collinearity.py` | Variance inflation factors and a warning for redundant model inputs | ✅ |
 | `eval/metrics.py` | AUC (time-dependent at the horizon), PR-AUC, Brier score, sensitivity/specificity at pre-specified thresholds | ✅ |
 | `eval/ablation.py` | Runs the nine pre-registered configurations with athlete-grouped cross-validation; tidy results with run IDs plus the out-of-fold predictions; optional scoring against known true risk; `ablation_report` gives athlete-level bootstrap intervals and the configured paired differences | ✅ |
+| `eval/cohort_size.py` | Cohort-size simulation study: out-of-fold metrics of the tabular models on replicate synthetic cohorts of each size, scored also against the known true risk; summary across replicates | ✅ |
 | `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
 | `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
 | `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
@@ -138,6 +140,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `run_pose.py` | Local videos + manifest → keypoint files, task-feature table and exclusion log | ⚠️ written, never run on real video |
 | `validate_markerless.py` | Paired markerless/mocap table → agreement tables and figures in `outputs/validation/` | ✅ (run on made-up pairs only) |
 | `ablation.py` | Runs the ablation grid on the synthetic cohort; writes `results.csv`, `predictions.parquet`, `performance.csv` and `differences.csv` to `outputs/ablation/<run_id>/`; `--report-from` recomputes the interval tables from saved predictions | ✅ |
+| `sim_study_sizes.py` | Runs the cohort-size study; writes `replicates.csv`, `summary.csv` and `performance_by_size.png` to `outputs/sim_study_sizes/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
@@ -180,6 +183,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_hazard_models.py` | Models that do not fit or predict; unfitted estimator exposed for explanation (v2); simulated effect directions not recovered | ✅ |
 | `test_encoder.py` | Wrong shapes or oversize models; conditioning that leaks into `none` or does nothing in the others; padding affecting pooling; normalisation using held-out athletes; mirrored augmentations | ✅ |
 | `test_neural_hazard.py` | Training that is not reproducible or reads held-out rows; growth uncertainty not reaching risk; wrong draw assembly; ablation grid not running end to end | ✅ |
+| `test_cohort_size_study.py` | Cohort-size study replicates that are not independent cohorts or not reproducible; summary not matching its replicates; unknown models accepted | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
 | `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |

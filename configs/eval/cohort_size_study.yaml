@@ -1,0 +1,8 @@
+# Simulation study: how out-of-fold performance depends on cohort size (and so on the number of
+# injuries). Run by scripts/sim_study_sizes.py. SYNTHETIC; results come only from runs.
+label: y_growth_related
+cohort_sizes: [300, 600, 1000, 2000]   # as in eval/sample_size.yaml
+n_replicates: 10             # ASSUMPTION: independent cohorts per size (seed = cohort seed + k)
+n_folds: 5
+interval_level: 0.90         # spread across replicates shown in the table and figure
+models: [age_only, maturity_growth_velocity, screening_only, confirmatory, hazard_logit]

@@ -146,6 +146,15 @@ def main(
         sidecar.write_text(json.dumps(source, indent=2), encoding="utf-8")
         written += ["tables/growth_twin.csv", "figures/growth_twin_aphv.png"]
 
+    sizes = _latest("sim_study_sizes")
+    if sizes is not None:
+        source = {"source": "scripts/sim_study_sizes.py", **_record(sizes)}
+        _write_table(pd.read_csv(sizes / "summary.csv"), tables / "cohort_size.csv", source)
+        shutil.copyfile(sizes / "performance_by_size.png", figures / "cohort_size.png")
+        sidecar = figures / f"cohort_size.png{PROVENANCE_SUFFIX}"
+        sidecar.write_text(json.dumps(source, indent=2), encoding="utf-8")
+        written += ["tables/cohort_size.csv", "figures/cohort_size.png"]
+
     plt.close("all")
     label = "SYNTHETIC " if provenance.get("synthetic") else ""
     typer.echo(f"{label}paper outputs written to {paper}:")
