@@ -473,6 +473,9 @@ def sim_risk(run: Path | None, values: Values) -> str:
         "SimBoostAuc",
         "SimConfSlope",
         "SimLogitSlope",
+        "SimDiffCount",
+        "SimDiffExcludingZero",
+        "SimPrevalence",
     ]
     if run is None:
         values.pending(*names)
@@ -484,6 +487,13 @@ def sim_risk(run: Path | None, values: Values) -> str:
     first = performance.iloc[0]
     values.number("SimAthletes", int(first["n_athletes"]), rid)
     values.number("SimEventWeeks", int(first["n_events"]), rid)
+    differences = pd.read_csv(run / "differences.csv")
+    auc_differences = differences[differences["metric"] == PRIMARY]
+    values.number("SimDiffCount", len(auc_differences), rid)
+    values.number("SimDiffExcludingZero", int(auc_differences["interval_excludes_zero"].sum()), rid)
+    values.put(
+        "SimPrevalence", percent(record["person_period"]["prevalence"]["y_growth_related"], 2), rid
+    )
     chosen = record.get("confirmatory_predictors") or []
     values.put("SimConfPredictors", ", ".join(c.replace("_", r"\_") for c in chosen) or "none", rid)
 

@@ -272,7 +272,9 @@ In the simulated cohort of \SimAthletes{} athletes, \SimEventWeeks{} athlete-wee
 by a growth-related injury within four weeks. Table~\ref{tab:simrisk} reports out-of-fold
 performance. The confirmatory model reached an AUC of \SimConfAuc{} (\SimConfAucCI{}) with
 calibration slope \SimConfSlope{}; the exploratory penalised hazard reached \SimLogitAuc{}
-(\SimLogitAucCI{}). In a separate simulated cohort of \SimGrowthN{} athletes, the growth twin
+(\SimLogitAucCI{}). Intervals were wide: in \SimDiffExcludingZero{} of \SimDiffCount{} paired
+comparisons against the maturity-and-growth-velocity baseline did the AUC difference exclude
+zero. With realistic incidence, a cohort of this size cannot rank the models. In a separate simulated cohort of \SimGrowthN{} athletes, the growth twin
 estimated age at PHV with an error of \SimTwinMAE{} against \SimMooreMAE{}~years for Moore,
 with \SimCoverage{} interval coverage (\SimCoverageNear{} within three years of PHV).
 
