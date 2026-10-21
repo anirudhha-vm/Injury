@@ -890,3 +890,12 @@ curve parameters redrawn, as do curves without a spurt (D-119).
 D-125 the boosted model scored 0.547 on that fold. The true risk scores 0.626 there, so 0.55 was
 an arbitrary share of an already low ceiling. The direction assertions, which are the point of
 the test, are unchanged and pass.
+
+**D-127 · IEEE-format manuscript generated from runs.** The user asked for the final paper in IEEE
+format. `paper/ieee/main.tex` (IEEEtran, journal) holds prose and macros only; every number is a
+macro or table that `scripts/build_paper.py` writes from the latest runs into git-ignored
+`paper/tables/`, each with a provenance sidecar. Values whose run is not finished print a red
+[pending] marker. A test checks that every macro used in the manuscript is generated. The PDF is
+compiled with Tectonic, which needs no system LaTeX install. Superseded synthetic runs made
+before the realistic recalibration were moved to `outputs/archive/` so they cannot reach the
+paper. References were checked for this session; page ranges are marked for human verification.

@@ -4,3 +4,7 @@ outcome_group: growth_related
 # [[CITED: 603 apophyseal injuries in 16,024 player-seasons, BJSM 2025;59:1663]] = 0.038.
 target_proportion: 0.038
 n_athletes: 3000             # large, so the simulated proportion has little noise
+# Growth-velocity effect used in configs/sim/cohort.yaml (growth_related.leg_length_velocity):
+# [[CITED: a 2-SD (5.2 cm/y) faster lower-limb growth rate carried 51% higher injury risk;
+# Johnson et al., as reported by Hall & Erskine, Sports Med 2025, doi:10.1007/s40279-025-02340-0]]
+growth_velocity_effect: {relative_risk: 1.51, per_cm_per_year: 5.2}

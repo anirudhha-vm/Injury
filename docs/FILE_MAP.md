@@ -134,6 +134,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `recommend/evidence_library.yaml` | Evidence statements and citations behind the prompts | ✅ (not verified against the papers) |
 | `paper/methods.py` | Renders the methods draft from the configuration files, every value tagged | ✅ |
 | `paper/results.py` | Renders the results draft from run tables; every number tagged with its run ID; real data and simulation study kept apart; missing runs become placeholders | ✅ |
+| `paper/ieee.py` | LaTeX macros and tables for the IEEE manuscript, generated from runs; pending runs print a red marker | ✅ |
 | `dashboard/bundle.py` | Builds and loads the dashboard data bundle: growth curves, out-of-fold risk with uncertainty, SHAP contributions, prompts, replay keypoints | ✅ |
 | `dashboard/figures.py` | The dashboard's plots, watermarked when synthetic | ✅ |
 
@@ -159,6 +160,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `evaluate.py` | Out-of-fold evaluation of baselines, the confirmatory model and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs (evaluation, ablation, growth study, real Berkeley growth, real runners' risk, synthetic validity study) into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `draft_results.py` | Writes `paper/results_draft.md` from the latest run of each kind (`make paper-results`) | ✅ |
+| `build_paper.py` | Builds the IEEE manuscript: values, tables and figures from the latest runs, then the PDF with Tectonic (`make paper-pdf`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
 | `check_cohort.py` | First command on real data: validates a cohort folder against the schema and writes anthropometry QC flags and TEM per measurer | ✅ |
 | `draft_methods.py` | Regenerates `paper/methods_draft.md` (`make methods`) | ✅ |
@@ -205,6 +207,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_runners.py` | Unbounded ratios kept; label or time used as input; grouped folds sharing runners; temporal split overlapping; predictions not held out | ✅ |
 | `test_validation_sim.py` | Validation pairs not from the pipeline, not reproducible, or error not growing with offset or with smaller body size | ✅ |
 | `test_results_draft.py` | Untagged numbers in the generated results; synthetic sections not labelled; missing runs silently dropped | ✅ |
+| `test_ieee_paper.py` | IEEE values not traceable to their run; pending runs not marked; macros used in `main.tex` that the generator never defines | ✅ |
 | `cohort_settings.py` | Test helper: the realistic cohort config plus `sim/test_signal.yaml` | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
@@ -227,6 +230,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
 | `paper/manuscript_outline.md` | Single-paper structure: which layer is real data and which is simulation; numbers only via `paper/results_draft.md` | ✅ |
+| `paper/ieee/main.tex`, `paper/ieee/references.bib` | The IEEE-format manuscript (IEEEtran journal): prose and macros only, numbers generated; PDF built to `paper/ieee/YouthTwin_IEEE.pdf` (git-ignored) | ✅ draft |
 | `paper/results_draft.md` | Generated results section (`make paper-results`); every number tagged with its run | ✅ generated |
 | `paper/preregistration.md` | Hypotheses, primary outcome/metric, ablation set — template to register before real data | ✅ template |
 | `paper/tripod_ai_checklist.md` | TRIPOD+AI item → where it is satisfied | ✅ working copy |

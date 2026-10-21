@@ -56,3 +56,5 @@ runs/
 .ipynb_checkpoints/
 .DS_Store
 data/external/*
+paper/ieee/build/
+paper/ieee/*.pdf
