@@ -155,8 +155,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `real_risk_runners.py` | Risk models on real injury outcomes (runners) under three split schemes; athlete-bootstrap intervals, paired differences, calibration, leakage inflation; to `outputs/real_risk_runners/<run_id>/` | ✅ |
 | `calibrate_simulation.py` | Finds the growth-related hazard intercept that gives the published incidence, exactly from the true hazards; writes `outputs/calibration/<run_id>/` | ✅ |
 | `sim_study_validation.py` | Synthetic validity study: calibrates the markerless error, simulates the planned 36-participant study, repeats it for precision; to `outputs/sim_study_validation/<run_id>/` | ✅ |
-| `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
-| `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
+| `evaluate.py` | Out-of-fold evaluation of baselines, the confirmatory model and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
+| `make_figures.py` | Turns the latest runs (evaluation, ablation, growth study, real Berkeley growth, real runners' risk, synthetic validity study) into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
 | `check_cohort.py` | First command on real data: validates a cohort folder against the schema and writes anthropometry QC flags and TEM per measurer | ✅ |
 | `draft_methods.py` | Regenerates `paper/methods_draft.md` (`make methods`) | ✅ |

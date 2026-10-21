@@ -862,3 +862,8 @@ calibrated so peak knee flexion in adult-size participants has a mean absolute e
 (Barzyk et al. 2024, smartphone vs Vicon). FPPA error is not set directly: it follows from the
 same landmark error. Errors scale with 1/body size, so any loss of agreement before PHV is an
 output. Knee flexion at initial contact is not reported (the skeleton fixes it at 20 deg).
+
+**D-122 · The confirmatory model is now part of `evaluate.py`.** It was built in D-102 but only
+tested, never evaluated next to the other models. Its predictors are chosen once from the whole
+cohort's size and event count (Riley criteria), so the choice cannot differ between folds.
+`make_figures.py` also copies the real-data and validity-study outputs into `paper/`.

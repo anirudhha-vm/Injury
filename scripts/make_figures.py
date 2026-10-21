@@ -27,6 +27,40 @@ from youthtwin.utils.config import load_config, repo_root
 from youthtwin.utils.plotting import PROVENANCE_SUFFIX, save_figure
 
 REFERENCES = ("treat_all", "treat_none")
+# Further runs copied as they are: (outputs/<kind>, producing script, tables, figures).
+# Real-data runs (Berkeley growth, runners' injuries) are not watermarked; synthetic ones were
+# watermarked when their figures were saved.
+EXTRA_RUNS: tuple[tuple[str, str, dict[str, str], dict[str, str]], ...] = (
+    (
+        "real_growth_berkeley",
+        "scripts/real_growth_berkeley.py",
+        {"summary.csv": "real_growth_twin.csv", "reference.csv": "real_growth_reference.csv"},
+        {"aphv_real.png": "real_growth_twin_aphv.png"},
+    ),
+    (
+        "real_risk_runners",
+        "scripts/real_risk_runners.py",
+        {
+            "performance.csv": "real_risk_performance.csv",
+            "differences.csv": "real_risk_differences.csv",
+            "leakage_inflation.csv": "real_risk_leakage_inflation.csv",
+        },
+        {"calibration.png": "real_risk_calibration.png"},
+    ),
+    (
+        "sim_study_validation",
+        "scripts/sim_study_validation.py",
+        {
+            "agreement_overall.csv": "validity_agreement.csv",
+            "agreement_by_maturity_group.csv": "validity_agreement_by_maturity.csv",
+            "precision.csv": "validity_precision.csv",
+        },
+        {
+            "bland_altman.png": "validity_bland_altman.png",
+            "rmse_by_maturity.png": "validity_rmse_by_maturity.png",
+        },
+    ),
+)
 
 
 def _latest(kind: str) -> Path | None:
@@ -154,6 +188,23 @@ def main(
         sidecar = figures / f"cohort_size.png{PROVENANCE_SUFFIX}"
         sidecar.write_text(json.dumps(source, indent=2), encoding="utf-8")
         written += ["tables/cohort_size.csv", "figures/cohort_size.png"]
+
+    for kind, source_script, tables_map, figures_map in EXTRA_RUNS:
+        run = _latest(kind)
+        if run is None:
+            continue
+        source = {"source": source_script, **_record(run)}
+        for name, target_name in tables_map.items():
+            if (run / name).is_file():
+                _write_table(pd.read_csv(run / name), tables / target_name, source)
+                written.append(f"tables/{target_name}")
+        for name, target_name in figures_map.items():
+            if (run / name).is_file():
+                figures.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(run / name, figures / target_name)
+                sidecar = figures / f"{target_name}{PROVENANCE_SUFFIX}"
+                sidecar.write_text(json.dumps(source, indent=2), encoding="utf-8")
+                written.append(f"figures/{target_name}")
 
     plt.close("all")
     label = "SYNTHETIC " if provenance.get("synthetic") else ""

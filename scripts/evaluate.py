@@ -3,7 +3,8 @@
 Reads a cohort directory (``--cohort-dir``: one parquet file per table, validated against the
 schema) or, without one, generates the synthetic cohort from its seed. Builds the athlete-week
 table (with growth-twin features if ``--posterior-dir`` is given), produces out-of-fold
-predictions for the three baselines, the penalised-logistic hazard and the boosted hazard, and
+predictions for the three baselines, the confirmatory model (sized by the Riley criteria),
+the penalised-logistic hazard and the boosted hazard, and
 writes to ``outputs/evaluation/<run_id>/``:
 
 ``predictions.parquet, performance.csv, differences.csv, decision_curve.csv, calibration.csv,
@@ -30,6 +31,7 @@ from youthtwin.features.person_period import build_person_period
 from youthtwin.growth.growth_state import SitarPosterior
 from youthtwin.io.ingest import read_cohort_dir
 from youthtwin.models.baselines import make_baseline
+from youthtwin.models.confirmatory import confirmatory_predictors, make_confirmatory
 from youthtwin.models.risk.hazard_logit import make_hazard_logit
 from youthtwin.models.risk.hazard_xgb import make_hazard_xgb
 from youthtwin.sim.cohort import generate_cohort
@@ -105,6 +107,13 @@ def main(
     factories["hazard_xgb"] = lambda f: make_hazard_xgb(
         f, features, hazard_config["hazard_xgb"], person_period_config, seed=seed
     )
+    # Confirmatory model: as many pre-specified predictors as the cohort's size and event
+    # count support (Riley criteria), chosen once from the whole cohort, not per fold.
+    chosen = confirmatory_predictors(frame, label, hazard_config["confirmatory"])
+    if chosen:
+        factories["confirmatory"] = lambda f: make_confirmatory(
+            f, chosen, hazard_config["confirmatory"], person_period_config
+        )
     folds = splits.grouped_stratified_folds(
         frame["athlete_id"], frame[label], n_splits=n_folds, seed=seed
     )
@@ -160,6 +169,7 @@ def main(
         "reference_model": reference,
         "person_period": period.summary,
         "growth_twin_features": posteriors is not None,
+        "confirmatory_predictors": chosen,
         "seconds": round(time.time() - started, 1),
     }
     (target / "run.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
