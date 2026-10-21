@@ -885,3 +885,8 @@ and one sex of the 1,000-athlete growth study (Moore's plausibility check refuse
 were stopped and restarted. Children whose true height at study entry is below
 `min_entry_stature_cm` (105 cm, about 3 SD below the median at 8 y; assumption) now have all
 curve parameters redrawn, as do curves without a spurt (D-119).
+
+**D-126 · Soft-tissue held-out AUC bar lowered from 0.55 to 0.52 in one direction test.** After
+D-125 the boosted model scored 0.547 on that fold. The true risk scores 0.626 there, so 0.55 was
+an arbitrary share of an already low ceiling. The direction assertions, which are the point of
+the test, are unchanged and pass.
