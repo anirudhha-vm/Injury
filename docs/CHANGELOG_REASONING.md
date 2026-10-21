@@ -872,3 +872,8 @@ cohort's size and event count (Riley criteria), so the choice cannot differ betw
 `paper/results_draft.md` from the latest runs; every number is a `[[RUN:<id>|value]]` tag, so the
 results guard can trace it. Part 1 holds the real-data results, Part 2 the simulation study with
 SYNTHETIC in every heading. A missing run becomes a `[[RESULT: ...]]` placeholder.
+
+**D-124 · One manuscript.** The user asked for a single strong paper. `paper/manuscript_outline.md`
+merges the three outlines, with a table at the top stating which layer rests on real data
+(growth twin on Berkeley; evaluation discipline on runners) and which on simulation (validity by
+maturity, growth-related injury risk, sample size). The three outlines stay as the fallback.

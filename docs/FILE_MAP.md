@@ -226,6 +226,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
+| `paper/manuscript_outline.md` | Single-paper structure: which layer is real data and which is simulation; numbers only via `paper/results_draft.md` | ✅ |
+| `paper/results_draft.md` | Generated results section (`make paper-results`); every number tagged with its run | ✅ generated |
 | `paper/preregistration.md` | Hypotheses, primary outcome/metric, ablation set — template to register before real data | ✅ template |
 | `paper/tripod_ai_checklist.md` | TRIPOD+AI item → where it is satisfied | ✅ working copy |
 | `paper/paperA_outline.md`, `paperB_outline.md` | Paper outlines mapped to reporting items; results as placeholders only | ✅ |
