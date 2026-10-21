@@ -68,7 +68,9 @@ def generate_cohort(config: Mapping[str, Any]) -> SyntheticCohort:
     academies = rng.integers(1, int(config["n_academies"]) + 1, n)
     right_dominant = rng.random(n) < config["proportion_right_dominant"]
 
-    params = growth_sim.sample_growth_params(make_rng(seed, "growth"), is_female, growth_cfg)
+    params = growth_sim.sample_growth_params(
+        make_rng(seed, "growth"), is_female, growth_cfg, entry_age=baseline_age
+    )
     sex_shift = np.where(is_female, 1.0, -1.0) * growth_cfg["mid_parent_sex_adjustment_cm"]
     mid_parent = (
         params.h1 + sex_shift + rng.normal(0.0, growth_cfg["mid_parent_height_noise_sd_cm"], n)

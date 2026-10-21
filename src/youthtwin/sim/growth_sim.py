@@ -141,32 +141,64 @@ def _has_spurt(s0: FloatArray, s1: FloatArray) -> BoolArray:
     return np.asarray(interior.any(axis=1), dtype=np.bool_)
 
 
-def sample_growth_params(
+def _draw_curve_params(
     rng: np.random.Generator, is_female: BoolArray, config: Mapping[str, Any]
+) -> dict[str, FloatArray]:
+    return {
+        "aphv": _by_sex(rng, is_female, config["aphv_years"], lognormal=False),
+        "h1": _by_sex(rng, is_female, config["adult_height_cm"], lognormal=False),
+        "gain": np.abs(
+            _by_sex(rng, is_female, config["height_gain_after_theta_cm"], lognormal=False)
+        ),
+        "s0": _by_sex(rng, is_female, config["s0"], lognormal=True),
+        "s1": _by_sex(rng, is_female, config["s1"], lognormal=True),
+    }
+
+
+def _implausible(
+    p: Mapping[str, FloatArray], entry_age: FloatArray | None, floor: float
+) -> BoolArray:
+    """Curves without a pubertal spurt, or too short at study entry."""
+    bad = ~_has_spurt(p["s0"], p["s1"])
+    if entry_age is not None:
+        ok = ~bad
+        theta = np.full_like(p["aphv"], np.nan)
+        theta[ok] = p["aphv"][ok] - pb1_peak_offset(p["s0"][ok], p["s1"][ok])
+        height = pb1_height(entry_age, p["h1"], p["h1"] - p["gain"], p["s0"], p["s1"], theta)
+        bad |= ok & (height < floor)
+    return np.asarray(bad, dtype=np.bool_)
+
+
+def sample_growth_params(
+    rng: np.random.Generator,
+    is_female: BoolArray,
+    config: Mapping[str, Any],
+    entry_age: FloatArray | None = None,
 ) -> GrowthParams:
-    """Draw true growth parameters; ``config`` is the ``growth`` block of the cohort config."""
-    aphv = _by_sex(rng, is_female, config["aphv_years"], lognormal=False)
-    h1 = _by_sex(rng, is_female, config["adult_height_cm"], lognormal=False)
-    gain = np.abs(_by_sex(rng, is_female, config["height_gain_after_theta_cm"], lognormal=False))
-    s0 = _by_sex(rng, is_female, config["s0"], lognormal=True)
-    s1 = _by_sex(rng, is_female, config["s1"], lognormal=True)
-    # A few (s0, s1) pairs in the tails give a curve with no pubertal spurt. Every simulated
-    # child has one (as every child in the reference data scored against does), so such pairs
-    # are redrawn.
+    """Draw true growth parameters; ``config`` is the ``growth`` block of the cohort config.
+
+    The parameters are drawn independently, whereas in real children they are correlated. In
+    the tails that gives two kinds of impossible child, which are redrawn whole: a curve with
+    no pubertal spurt (every child scored in the reference data has one), and, if ``entry_age``
+    is given, a child shorter at study entry than ``min_entry_stature_cm``.
+    """
+    params = _draw_curve_params(rng, is_female, config)
+    floor = float(config.get("min_entry_stature_cm", 0.0))
     for _ in range(_MAX_REDRAWS):
-        no_spurt = ~_has_spurt(s0, s1)
-        if not no_spurt.any():
+        bad = _implausible(params, entry_age, floor)
+        if not bad.any():
             break
-        redraw = is_female[no_spurt]
-        s0[no_spurt] = _by_sex(rng, redraw, config["s0"], lognormal=True)
-        s1[no_spurt] = _by_sex(rng, redraw, config["s1"], lognormal=True)
+        fresh = _draw_curve_params(rng, is_female[bad], config)
+        for name, values in fresh.items():
+            params[name][bad] = values
     else:
-        raise ValueError("Growth parameters keep producing curves without a pubertal spurt")
+        raise ValueError("Growth parameters keep producing implausible curves")
+    s0, s1, aphv, h1 = params["s0"], params["s1"], params["aphv"], params["h1"]
     ratio = config["sitting_ratio"]["adult"]
     return GrowthParams(
         is_female=is_female,
         h1=h1,
-        h_theta=h1 - gain,
+        h_theta=h1 - params["gain"],
         s0=s0,
         s1=s1,
         theta=aphv - pb1_peak_offset(s0, s1),

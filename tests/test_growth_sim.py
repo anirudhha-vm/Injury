@@ -173,3 +173,18 @@ def test_every_simulated_child_has_a_spurt(cohort_config: dict[str, Any]) -> Non
     params = sample_growth_params(np.random.default_rng(0), is_female, cohort_config["growth"])
     assert _has_spurt(params.s0, params.s1).all()
     np.testing.assert_allclose(params.theta + pb1_peak_offset(params.s0, params.s1), params.aphv)
+
+
+def test_no_simulated_child_is_implausibly_short_at_entry(cohort_config: dict[str, Any]) -> None:
+    """Independent draws of very late timing and slow childhood growth can give an 8-year-old
+    under 90 cm; with an entry age those children are redrawn."""
+    from youthtwin.sim.growth_sim import GrowthCurves, sample_growth_params
+
+    n = 20000
+    is_female = np.arange(n) % 2 == 0
+    entry = np.full(n, 8.0)
+    params = sample_growth_params(
+        np.random.default_rng(3), is_female, cohort_config["growth"], entry
+    )
+    stature = GrowthCurves(params, cohort_config["growth"]).stature(entry)
+    assert stature.min() >= cohort_config["growth"]["min_entry_stature_cm"]

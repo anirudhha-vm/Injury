@@ -877,3 +877,11 @@ SYNTHETIC in every heading. A missing run becomes a `[[RESULT: ...]]` placeholde
 merges the three outlines, with a table at the top stating which layer rests on real data
 (growth twin on Berkeley; evaluation discipline on runners) and which on simulation (validity by
 maturity, growth-related injury risk, sample size). The three outlines stay as the fallback.
+
+**D-125 · Implausibly short children are redrawn.** Drawing the Preece-Baines parameters
+independently (in real children they are correlated) occasionally combined very late timing
+with slow childhood growth, giving an 8-year-old of 87-90 cm. That broke the cohort-size study
+and one sex of the 1,000-athlete growth study (Moore's plausibility check refuses it), so both
+were stopped and restarted. Children whose true height at study entry is below
+`min_entry_stature_cm` (105 cm, about 3 SD below the median at 8 y; assumption) now have all
+curve parameters redrawn, as do curves without a spurt (D-119).

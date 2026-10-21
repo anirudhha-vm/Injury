@@ -39,6 +39,8 @@ growth:
   s1:                      # pubertal rate constant; Berkeley
     female: {median: 1.104, sigma_log: 0.116}
     male: {median: 1.149, sigma_log: 0.119}
+  min_entry_stature_cm: 105.0   # ASSUMPTION: about 3 SD below the median at 8 y (IAP charts);
+                                # children drawn shorter at entry are redrawn (D-125)
   sitting_ratio:           # sitting height / stature as a function of true maturity offset u
     adult: {mean: 0.515, sd: 0.008}
     child_excess: 0.030    # legs relatively short in childhood
