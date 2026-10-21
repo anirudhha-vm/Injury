@@ -210,7 +210,7 @@ discriminate (AUC \RunAucLoad{}, \RunAucLoadCI{}), whereas the penalised logisti
 \RunDiffLogit{} (\RunDiffLogitCI{}). The temporal hold-out gave a similar AUC (\RunTempAucLogit{})
 and a calibration slope of \RunTempSlopeLogit{}, while under grouped cross-validation the slopes
 were below one (\RunSlopeLogit{} and \RunSlopeBoost{}), indicating predictions that are too
-extreme. Letting a runner's days fall on both sides of the split raised AUC by \RunInflLoad{},
+extreme (Fig.~\ref{fig:runners}). Letting a runner's days fall on both sides of the split raised AUC by \RunInflLoad{},
 \RunInflLogit{} and \RunInflBoost{} for the three models, each with an interval excluding zero.
 The dataset's authors reported an AUC of \CitedPublishedAuc{} for this task \cite{lovdal2021};
 we do not attribute the difference to any particular cause.
@@ -222,11 +222,19 @@ we do not attribute the difference to any particular cause.
 \resizebox{\columnwidth}{!}{\input{../tables/ieee_tab_runners.tex}}
 \end{table}
 
+\begin{figure}[!t]
+\centering
+\IfFileExists{../figures/ieee_fig_runners_calibration.png}{\includegraphics[width=\columnwidth]{ieee_fig_runners_calibration.png}}{\fbox{\PENDINGFIG}}
+\caption{Calibration under runner-grouped cross-validation, real injury outcomes (deciles of
+predicted risk).}
+\label{fig:runners}
+\end{figure}
+
 \subsection{Simulation study: smartphone versus motion capture}
 \emph{All results in this and the following subsections are from synthetic data.}
-Peak knee flexion met the \SpecRmseLimit{}$^\circ$ limit in at least \ValKneePassMin{} of
-simulated studies in every maturity group (mean RMSE \ValKneeRMSEPre{}$^\circ$ before PHV,
-\ValKneeRMSEPost{}$^\circ$ after; Table~\ref{tab:validity}). The knee frontal-plane projection
+For peak knee flexion, the lowest share of simulated studies meeting the
+\SpecRmseLimit{}$^\circ$ limit in any maturity group was \ValKneePassMin{} (mean RMSE \ValKneeRMSEPre{}$^\circ$ before PHV,
+\ValKneeRMSEPost{}$^\circ$ after; Table~\ref{tab:validity}, Fig.~\ref{fig:validity}). The knee frontal-plane projection
 angle at peak flexion was less accurate and degraded in smaller children: mean RMSE
 \ValFppaRMSEPre{}$^\circ$ before, \ValFppaRMSECirca{}$^\circ$ around and \ValFppaRMSEPost{}$^\circ$
 after PHV, so that a study of \SpecValN{} participants would conclude RMSE below the limit in
@@ -241,6 +249,15 @@ Angles in degrees.}
 \centering
 \input{../tables/ieee_tab_validity.tex}
 \end{table*}
+
+\begin{figure}[!t]
+\centering
+\IfFileExists{../figures/ieee_fig_validity_rmse.png}{\includegraphics[width=\columnwidth]{ieee_fig_validity_rmse.png}}{\fbox{\PENDINGFIG}}
+\caption{Simulated smartphone versus motion capture (SYNTHETIC): mean RMSE by maturity group
+across \ValStudies{} repeated studies of \SpecValN{} participants, with the central \SpecCI{}
+range; dashed line, pre-specified limit.}
+\label{fig:validity}
+\end{figure}
 
 \subsection{Simulation study: risk models}
 In the simulated cohort of \SimAthletes{} athletes, \SimEventWeeks{} athlete-weeks were followed
