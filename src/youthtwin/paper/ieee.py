@@ -649,6 +649,8 @@ def cohort_size(run: Path | None, values: Values) -> str:
         "SizeSmall",
         "SizeLarge",
         "SizeTrueAucLarge",
+        "SizeTrueAucSmall",
+        "SizeCorrLogitLarge",
         "SizeLogitAucSmall",
         "SizeLogitAucLarge",
         "SizeLogitSlopeSmall",
@@ -676,6 +678,10 @@ def cohort_size(run: Path | None, values: Values) -> str:
     values.number("SizeEventsSmall", mean("(cohort)", "athletes_with_event", small), rid, 0)
     values.number("SizeEventsLarge", mean("(cohort)", "athletes_with_event", large), rid, 0)
     values.number("SizeTrueAucLarge", mean("true_risk", "auc", large), rid)
+    values.number("SizeTrueAucSmall", mean("true_risk", "auc", small), rid)
+    values.number(
+        "SizeCorrLogitLarge", mean("hazard_logit", "correlation_with_true_risk", large), rid
+    )
     values.number("SizeLogitAucSmall", mean("hazard_logit", "auc", small), rid)
     values.number("SizeLogitAucLarge", mean("hazard_logit", "auc", large), rid)
     values.number("SizeLogitSlopeSmall", mean("hazard_logit", "calibration_slope", small), rid)

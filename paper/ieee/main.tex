@@ -311,9 +311,12 @@ paired difference \PropDiff{}, \PropDiffCI{}) and correlation with the true risk
 \subsection{Simulation study: cohort size}
 With \SizeSmall{} athletes a season produced on average \SizeEventsSmall{} athletes with a
 growth-related injury, and \SizeEventsLarge{} with \SizeLarge{} athletes (Table~\ref{tab:sizes},
-Fig.~\ref{fig:sizes}). The penalised model's AUC was \SizeLogitAucSmall{} and
-\SizeLogitAucLarge{} at these sizes against a ceiling of \SizeTrueAucLarge{} set by the true
-risk, and its calibration slope moved from \SizeLogitSlopeSmall{} to \SizeLogitSlopeLarge{}.
+Fig.~\ref{fig:sizes}). Even the true risk discriminated only modestly (AUC \SizeTrueAucSmall{}
+to \SizeTrueAucLarge{}), because the published effects on which the simulation is calibrated
+are small. The penalised model's AUC was \SizeLogitAucSmall{} and \SizeLogitAucLarge{} at the
+two sizes, its calibration slope \SizeLogitSlopeSmall{} and \SizeLogitSlopeLarge{}, and its
+correlation with the true risk \SizeCorrLogitLarge{} at the larger size: even \SizeLarge{}
+athlete-seasons left the learned models far from the attainable ceiling.
 
 \begin{table*}[!t]
 \caption{Out-of-fold performance against cohort size (SYNTHETIC). Mean and range across
@@ -342,6 +345,12 @@ its uncertainty is used downstream, and it should be judged separately near and 
 non-negotiable: leaking an athlete across folds raised AUC by up to \RunInflBoost{}, enough to
 reverse the ranking of models whose AUCs differ by less than that. Calibration slopes below one under grouped
 evaluation show that discrimination alone would overstate readiness for use.
+
+\emph{Sample size.} Under published incidence and effect sizes, growth-related injury is only
+weakly predictable even with perfect knowledge of the generating process, and models learned
+from a few thousand athlete-seasons stay far below that ceiling and are poorly calibrated. A
+prospective study should therefore pool academies and seasons, pre-specify a small model sized
+by the Riley criteria \cite{riley2020}, and treat flexible models as exploratory.
 
 \emph{Smartphone kinematics.} The simulation, anchored to a published knee-flexion error,
 predicts that sagittal knee and hip angles are measured well enough at every maturity stage,
