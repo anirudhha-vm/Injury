@@ -46,8 +46,8 @@ growth-velocity effects and smartphone measurement error shows that knee flexion
 \SpecRmseLimit{}$^\circ$ agreement limit at every maturity stage, whereas frontal-plane knee
 angles do not reliably do so before PHV. Under published incidence and effect sizes even the
 true risk reached an AUC of only \SizeTrueAucLarge{}, models learned from \SizeLarge{}
-athlete-seasons stayed near chance, and propagated growth uncertainty yielded risk intervals
-containing the true risk in \PropCoverage{} of athlete-weeks. All simulated results are labelled
+athlete-seasons stayed near chance, and propagating growth uncertainty yielded risk intervals that
+contained the true risk in only \PropCoverage{} of athlete-weeks. All simulated results are labelled
 as such and are not findings about athletes.
 \end{abstract}
 
@@ -310,7 +310,12 @@ networks gave a mean predictive standard deviation of \PropSD{} on a mean risk o
 true simulated risk in \PropCoverage{} of athlete-weeks. Averaging over growth draws changed
 discrimination little (AUC \PropAucWith{} with propagation against \PropAucWithout{} without;
 paired difference \PropDiff{}, \PropDiffCI{}) and correlation with the true risk was
-\PropCorrWith{} and \PropCorrWithout{} respectively.
+\PropCorrWith{} and \PropCorrWithout{} respectively. The intervals were therefore far too narrow
+to be read as confidence intervals for risk: with few events the dominant error is in the
+fitted risk model itself, which growth draws and a small ensemble do not capture. Covering
+intervals would require resampling athletes when training (bootstrap ensembles) or conformal
+calibration on held-out athletes; until then the propagated spread should be presented as
+sensitivity to growth-timing uncertainty.
 
 \begin{table}[!t]
 \caption{Conditioning ablation (SYNTHETIC), growth-related injury.}
