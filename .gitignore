@@ -55,3 +55,4 @@ runs/
 *.nc
 .ipynb_checkpoints/
 .DS_Store
+data/external/*

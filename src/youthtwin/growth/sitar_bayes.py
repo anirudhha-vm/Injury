@@ -136,6 +136,17 @@ def prepare_growth_data(
     ]
     frame["stature"] = frame[["stature_1", "stature_2"]].mean(axis=1)
     frame["sitting_height"] = frame[["sitting_height_1", "sitting_height_2"]].mean(axis=1)
+    return growth_data_from_measurements(frame, sex, synthetic=bool(next(iter(flags))))
+
+
+def growth_data_from_measurements(frame: pd.DataFrame, sex: Sex, *, synthetic: bool) -> GrowthData:
+    """Model-ready data from one sex's measurements, whatever their source.
+
+    ``frame`` has columns ``athlete_id, age, stature, sitting_height``. Each athlete's prior
+    centre is the Moore APHV from the visit at which the athlete is estimated to be closest to
+    PHV, because the equation's error grows with distance from PHV.
+    """
+    frame = frame.sort_values(["athlete_id", "age"]).reset_index(drop=True)
     estimate = moore2015(
         sex,
         frame["age"].to_numpy(),
@@ -150,12 +161,12 @@ def prepare_growth_data(
     codes = {athlete: k for k, athlete in enumerate(athlete_ids)}
     return GrowthData(
         athlete_ids=athlete_ids,
-        athlete_index=np.asarray(frame["athlete_id"].map(codes), dtype=np.int64),
+        athlete_index=np.asarray(frame["athlete_id"].astype(str).map(codes), dtype=np.int64),
         age=frame["age"].to_numpy(dtype=np.float64),
         stature=frame["stature"].to_numpy(dtype=np.float64),
         prior_aphv=prior.to_numpy(dtype=np.float64),
         sex=sex,
-        synthetic=bool(next(iter(flags))),
+        synthetic=synthetic,
     )
 
 

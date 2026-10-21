@@ -788,3 +788,33 @@ Caveat to carry into any write-up: the simulation injures about 19% of athletes 
 a growth-related injury, several times the published 4 per 100 athlete-seasons, so the same
 number of athletes in a real cohort would yield far fewer events. The figure therefore labels
 each size with its number of injured athletes, which is the quantity that transfers.
+
+---
+
+## M10 — real public data (2026-10-21)
+
+**R-011 · No public dataset combines youth growth, video and diagnosed growth-related injury.**
+Searched 2026-10-21 (sport-science dataset index, DataverseNL, Figshare, PMC data statements).
+The closest youth datasets either are not released or build their injury "label" from their own
+input features (a 2026 Frontiers dataset of 320 adolescents), which non-negotiable N1 forbids.
+Each layer is therefore tested on the best real dataset available for it (`docs/plans/M10.md`).
+
+**D-114 · The growth twin is tested on the Berkeley Child Guidance Study.** 136 children,
+6-monthly height and stem (sitting) height from 8 to 21 y, distributed in the `sitar` R package
+(GPL >= 2), read with `pyreadr` (new dev dependency). Berkeley was not used to develop or
+calibrate Moore 2015 (PBMAS; calibrated on HBS-III and Harpenden), so the comparison is fair.
+The reference age at PHV comes from each child's full record (Preece-Baines model 1, checked
+against a smoothing spline); the twin sees one season of three 6-monthly measurements. The twin
+is fitted on every child's window; the reference rules only decide who is scored, so they
+cannot influence the fit.
+
+**D-115 · Reference agreement tolerance set to 1.0 y, with 0.5 y as a sensitivity analysis.**
+At 0.5 y the rule excluded 40 of 136 children (28 girls), mostly because the GCV smoothing
+spline is noisy on 6-monthly data, not because the Preece-Baines fit was poor (RMSE <= 0.9 cm in
+every child). 1.0 y keeps 125; both subsets are reported.
+
+**D-116 · `prepare_growth_data` split.** `growth_data_from_measurements` takes measurements
+from any source; the synthetic path calls it after joining its tables. Behaviour unchanged.
+
+**D-117 · Video validity layer blocked on the user.** OpenCap's validation data needs a SimTK
+login; BioCV needs a signed data-use agreement. Both are the user's decision.

@@ -1284,6 +1284,22 @@ wheels = [
 ]
 
 [[package]]
+name = "pyreadr"
+version = "0.5.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "narwhals" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/84/63/0987e525556c86e5e8dc499f8266fd387ab520d9fe81e2e51b1f464553ca/pyreadr-0.5.7.tar.gz", hash = "sha256:3243f0f7107c47a193508f79f39f22310f66352f5f5ee18bb0208ceebfd84fb6", size = 1307039, upload-time = "2026-09-28T15:39:01.668Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/cb/f47f6f6e30017463ba09a4a70923be426af8910ab68eb0676417dff88ae5/pyreadr-0.5.7-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:becbb9e14eddc9f1172813036acb75c39d78259cf0e20367a4086d9ad630a8c4", size = 333613, upload-time = "2026-09-28T15:38:29.506Z" },
+    { url = "https://files.pythonhosted.org/packages/00/6e/fb1238766237e732b24dea162faa6479bcd1c0e4c17e4a65f13107857f3e/pyreadr-0.5.7-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:e206767ce9eda21b6373beed67d0e4206ff2072ad40e6ea7cb333f739b527abe", size = 334839, upload-time = "2026-09-28T15:38:30.923Z" },
+    { url = "https://files.pythonhosted.org/packages/ec/4a/cb341a8da78db3ce1534af1beae26cbf0b8817d1f8bfa5d8f17e01264838/pyreadr-0.5.7-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:e04c6e3f4d019f2475e4d77f01c7a439c175bc069be5f4a57c1ef2925ca091d2", size = 849073, upload-time = "2026-09-28T15:38:32.729Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/15/14cd2738fbe12f6ae195e2280beac88861f1bbc0550f19a23fadc813b118/pyreadr-0.5.7-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:cf7a5e704d1e2e1dc0fa2f5a0a7e1f51a0e3ca870d1c838f516e7853b97910b6", size = 848605, upload-time = "2026-09-28T15:38:34.461Z" },
+    { url = "https://files.pythonhosted.org/packages/75/ad/5f223128408930763aebfcdd247ce2a46cc4b59dfb7a0ec34a1803090ad3/pyreadr-0.5.7-cp311-cp311-win_amd64.whl", hash = "sha256:1dd30aa90c18507bf7e3dc6a2f57e48bc9dc98e6cff4efd56c495fde146ae1a3", size = 2378122, upload-time = "2026-09-28T15:38:36.475Z" },
+]
+
+[[package]]
 name = "pytensor"
 version = "2.38.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2102,6 +2118,7 @@ dev = [
     { name = "pandas-stubs" },
     { name = "pingouin" },
     { name = "pre-commit" },
+    { name = "pyreadr" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -2137,6 +2154,7 @@ dev = [
     { name = "pandas-stubs", specifier = ">=2.2" },
     { name = "pingouin", specifier = ">=0.5.4" },
     { name = "pre-commit", specifier = ">=3.8" },
+    { name = "pyreadr", specifier = ">=0.5.7" },
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "ruff", specifier = ">=0.6" },

@@ -1,0 +1,21 @@
+# Growth twin on real data: the Berkeley Child Guidance Study (sitar R package, GPL >= 2).
+# 136 children born 1928-29 in Berkeley, California, of north European ancestry; measured
+# 6-monthly from 8 to 21 y. Not used to develop or calibrate Moore 2015.
+source:
+  url: https://cran.r-project.org/src/contrib/sitar_1.5.0.tar.gz
+  sha256: 312466b96e1a38fea4d4bc591f91c69dfe7b425fb92aef9ccd02db00c40b97c5
+  target: data/external/sitar
+  member: sitar/data/berkeley.rda
+reference:                   # age at PHV from each child's full dense record
+  min_age_years: 4.0         # Preece-Baines model 1 is fitted from mid-childhood (ASSUMPTION)
+  coverage_years: 2.0        # record must extend this far either side of the fitted peak
+  max_rmse_cm: 1.0           # ASSUMPTION: worse fits are excluded
+  max_method_disagreement_years: 1.0   # PB1 vs smoothing-spline peak; ASSUMPTION (0.5 kept 96 of 136)
+  strict_disagreement_years: 0.5       # sensitivity analysis on the children where they agree closely
+  initial_theta_years: {female: 12.0, male: 14.0}
+window:                      # what the twin is allowed to see: one season per child
+  length_years: 1.0          # inclusive: 3 measurements at 6-month spacing
+  start_age_range_years: [8.0, 16.5]   # like baseline ages 8-17 in the study design
+  min_measurements: 3
+n_replicates: 3              # independent random window assignments
+seed: 20261021

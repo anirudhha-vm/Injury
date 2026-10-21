@@ -1,4 +1,4 @@
-.PHONY: setup test test-slow lint gate sim sim-study-growth sim-study-sizes evaluate ablation dashboard-data dashboard pipeline methods paper-figs todo
+.PHONY: fetch-data real-growth real-risk setup test test-slow lint gate sim sim-study-growth sim-study-sizes evaluate ablation dashboard-data dashboard pipeline methods paper-figs todo
 
 # A system PYTHONPATH (e.g. from a ROS install) leaks foreign pytest plugins into the venv.
 unexport PYTHONPATH
@@ -33,6 +33,15 @@ sim-study-growth:  ## simulation study for the growth twin (SYNTHETIC; tens of m
 
 sim-study-sizes:  ## performance of the tabular models against cohort size (SYNTHETIC)
 	uv run python scripts/sim_study_sizes.py
+
+fetch-data:  ## download the public datasets (Berkeley growth, runners' injuries) with checksums
+	uv run python scripts/fetch_public_data.py
+
+real-growth:  ## growth twin on the real Berkeley growth data (hours)
+	uv run python scripts/real_growth_berkeley.py
+
+real-risk:  ## injury-risk evaluation on the real runners' dataset
+	uv run python scripts/real_risk_runners.py
 
 evaluate:  ## out-of-fold evaluation of the tabular models (SYNTHETIC)
 	uv run python scripts/evaluate.py

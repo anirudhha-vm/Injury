@@ -1,0 +1,11 @@
+# Injury-risk pipeline on real data: Lövdal, den Hartigh & Azzopardi (2021), competitive
+# runners. DataverseNL doi:10.34894/UWU9PV, CC0 1.0. 74 Dutch high-level runners (27 women,
+# 47 men), training logs 2012-2019 with injury flags. Adult runners: a check of the evaluation
+# machinery on real outcomes, NOT evidence about growth-related injury in youth.
+source:
+  target: data/external/runners
+  files:                     # DataverseNL datafile id -> name, sha256
+    - {id: 47971, name: week_approach_maskedID_timeseries.csv, sha256: 261ba3a481f3428611cc175eac2b67749ee3d97980d81168af13bd9f932d5a31}
+    - {id: 47972, name: day_approach_maskedID_timeseries.csv, sha256: 9c06ecefae9caa4ca831c08c7ebe4d25b0b01e8aa285df526a4e6791c673b6e8}
+    - {id: 422690, name: README.txt, sha256: 60cb848f9cb0c18c374af03627ff698b3e31dbc49e614afe21f0c7931e1e04f0}
+  url_template: https://dataverse.nl/api/access/datafile/{id}
