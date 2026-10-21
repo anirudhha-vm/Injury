@@ -156,13 +156,18 @@ Bland--Altman limits \cite{bland1986}, the two-way random-effects absolute-agree
 \SpecRmseLimit{}$^\circ$ limit.
 
 \emph{Risk models.} In a simulated cohort of \SimAthletes{} athletes followed for one season,
-an athlete-week table was built with the growth-twin state, observed growth velocities,
+an athlete-week table was built with observed growth velocities, the Moore maturity offset,
 screening features and exposure; the outcome was a growth-related injury in the next four
-weeks. The confirmatory model used as many pre-specified predictors as the Riley criteria
+weeks. For computational reasons the growth-twin state was not fitted for this cohort, so the
+risk models here use observed growth only; the growth twin was evaluated in a separate
+simulated cohort of \SimGrowthN{} athletes. The confirmatory model used as many pre-specified predictors as the Riley criteria
 \cite{riley2020} allow for the achieved events (\SimConfPredictors). Exploratory models were a
 penalised logistic hazard, a boosted hazard and neural hazards with a temporal convolutional
-movement encoder conditioned on the growth state, compared in a nine-configuration ablation
-with deep ensembles \cite{lakshminarayanan2017}. Evaluation used athlete-grouped five-fold
+movement encoder conditioned on the growth state, compared in a nine-configuration ablation.
+To fit the computing budget each configuration used a single network (rather than a deep
+ensemble \cite{lakshminarayanan2017}) trained for six epochs after five epochs of
+self-supervised pre-training; the configuration that propagates growth-twin uncertainty could
+therefore not be evaluated. Evaluation used athlete-grouped five-fold
 cross-validation with athlete-level bootstrap intervals, calibration intercept and slope
 \cite{vancalster2019}, and decision curves \cite{vickers2006dca}. A cohort-size study repeated
 the tabular evaluation on independent simulated cohorts of increasing size.
@@ -264,8 +269,9 @@ In the simulated cohort of \SimAthletes{} athletes, \SimEventWeeks{} athlete-wee
 by a growth-related injury within four weeks. Table~\ref{tab:simrisk} reports out-of-fold
 performance. The confirmatory model reached an AUC of \SimConfAuc{} (\SimConfAucCI{}) with
 calibration slope \SimConfSlope{}; the exploratory penalised hazard reached \SimLogitAuc{}
-(\SimLogitAucCI{}). The growth twin in this cohort estimated age at PHV with an error of
-\SimTwinMAE{} against \SimMooreMAE{}~years for Moore, with \SimCoverage{} interval coverage.
+(\SimLogitAucCI{}). In a separate simulated cohort of \SimGrowthN{} athletes, the growth twin
+estimated age at PHV with an error of \SimTwinMAE{} against \SimMooreMAE{}~years for Moore,
+with \SimCoverage{} interval coverage (\SimCoverageNear{} within three years of PHV).
 
 \begin{table}[!t]
 \caption{Simulated risk models (SYNTHETIC), growth-related injury within four weeks.}
@@ -278,9 +284,9 @@ calibration slope \SimConfSlope{}; the exploratory penalised hazard reached \Sim
 Table~\ref{tab:ablation} lists the nine pre-registered configurations. The paired AUC
 difference of FiLM conditioning was \AblFilmVsConcat{} (\AblFilmVsConcatCI{}) against input
 concatenation, \AblFilmVsLate{} (\AblFilmVsLateCI{}) against late fusion and \AblFilmVsNone{}
-(\AblFilmVsNoneCI{}) against a movement encoder without growth state. Nominal \SpecInterval{}
-risk intervals from growth-draw propagation and ensembling contained the true simulated risk in
-\AblCoverage{} of athlete-weeks.
+(\AblFilmVsNoneCI{}) against a movement encoder without growth state. Because the growth twin was not fitted for this cohort, the
+uncertainty-propagating configuration reduces to its predecessor and is reported for
+completeness only.
 
 \begin{table}[!t]
 \caption{Conditioning ablation (SYNTHETIC), growth-related injury.}
@@ -334,7 +340,9 @@ data from adult runners; neither tests growth-related injury in youth. The simul
 depend on assumptions stated in the methods, chiefly the effects of landing load and its
 interaction with growth, and the landmark-error model for the frontal plane. The Mirwald girls'
 equation was not used because its coefficients have not been verified against the original
-publication. The propagated risk intervals reflect growth-timing and ensemble uncertainty only.
+publication. The simulated risk models were not given growth-twin features, and the ablation used
+single networks with short training, so the simulation does not test uncertainty propagation
+into risk; that remains for the prospective cohort.
 
 \section{Conclusion}
 A single-season growth twin can be validated on real growth records today, and the evaluation
