@@ -829,3 +829,36 @@ columns divide by zero in rest weeks (values to 2e8); they are replaced by
 learned from other rows (N4). The existing builders (`make_hazard_logit`, `make_hazard_xgb`) and
 the leakage guard are reused unchanged. The metric is labelled `time_dependent_auc_4wk` by the
 shared config; here it is the AUC for injury on the event day.
+
+---
+
+## Realistic simulation for the layers without public data (2026-10-22)
+
+The user asked for realistic synthetic data where no real data exist, and final results. The
+synthetic layers stay labelled SYNTHETIC and appear in the paper only as a simulation study.
+
+**D-119 · Growth-curve shape and spread from real children.** The simulation's Preece-Baines
+shape parameters (s0, s1), gain after theta, and the SD of age at PHV now come from the fits to
+the 125 Berkeley children with a reliable reference (girls: s0 median 0.128, s1 1.104, APHV SD
+0.89 y; boys: 0.109, 1.149, 1.12 y). Mean timing stays Indian (D-110); adult height stays an
+assumption. With the wider real-data spreads about 0.4% of (s0, s1) draws give a curve with no
+spurt; those are redrawn (the reference fits excluded the one such child).
+
+**D-120 · Injury incidence calibrated to the literature.** Growth-related: the leg-length
+velocity effect is now 0.158 per 2 cm/y (51% higher risk per 5.2 cm/y, Johnson et al. via Hall &
+Erskine 2025; an all-injury estimate, so conservative), and the intercept (-7.347) is solved so
+that 3.8% of athletes have a growth-related injury per season (603 in 16,024 player-seasons,
+BJSM 2025). The old values gave 19%, five times too many. The load, interaction and hours terms
+remain assumptions (no published estimates). Tests that check the machinery recovers effect
+directions use the old strong-signal values through `configs/sim/test_signal.yaml`; a new test
+checks the realistic config gives the published incidence. Consequence: a 300-athlete season now
+yields about 11 growth-related injuries.
+
+**D-121 · Synthetic validity study through the real pose pipeline.** No children's video plus
+mocap dataset is openly downloadable (D-117). Each simulated drop jump is observed twice, by a
+mocap-like reference and a smartphone-like estimator (per-participant and per-trial landmark
+offsets plus frame noise), and both go through `pose.task_features`. The offset size is
+calibrated so peak knee flexion in adult-size participants has a mean absolute error of 2.1 deg
+(Barzyk et al. 2024, smartphone vs Vicon). FPPA error is not set directly: it follows from the
+same landmark error. Errors scale with 1/body size, so any loss of agreement before PHV is an
+output. Knee flexion at initial contact is not reported (the skeleton fixes it at 20 deg).

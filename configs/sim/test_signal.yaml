@@ -1,0 +1,9 @@
+# PIPELINE TESTS ONLY - not realistic. Overrides of sim/cohort.yaml used by tests/cohort_settings.py.
+# The realistic, calibrated cohort (3.8% of athletes with a growth-related injury per season,
+# published growth-velocity effect) gives a 300-athlete test cohort about a dozen growth-related
+# injuries: too few for tests that check a model recovers the simulated effect directions. These
+# are the strong-signal values used before calibration (D-120); tests of the machinery use them.
+injury:
+  growth_related:
+    intercept: -5.6
+    leg_length_velocity: 0.6

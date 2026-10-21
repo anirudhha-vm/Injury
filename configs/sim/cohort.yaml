@@ -21,22 +21,24 @@ growth:
     # Means: peak-centred height velocity in Indian children, 10.8 y (girls) and 13.4 y (boys),
     # Khadilkar et al., Indian Pediatr 2019 (n = 2,949, affluent urban schools), as reported in
     # the accompanying commentary. Other Indian cohorts put the peak up to a year earlier in
-    # boys (Sabinkar et al., Cureus 2023). SDs are not reported there: ASSUMPTION.
-    # Until 2026-10-13 these were 12.0 and 14.0 (the brief's values).
-    female: {mean: 10.8, sd: 1.0}
-    male: {mean: 13.4, sd: 1.0}
-  adult_height_cm:         # h1
+    # boys (Sabinkar et al., Cureus 2023).
+    # SDs and the curve-shape blocks below (gain, s0, s1): from Preece-Baines fits to the real
+    # Berkeley Child Guidance Study, 125 children (scripts/real_growth_berkeley.py reference
+    # fits; D-119). Shape is borrowed from a 1930s US cohort; timing from Indian data.
+    female: {mean: 10.8, sd: 0.89}
+    male: {mean: 13.4, sd: 1.12}
+  adult_height_cm:         # h1. ASSUMPTION (roughly urban Indian adults); Berkeley: 166 / 180
     female: {mean: 160.0, sd: 6.0}
     male: {mean: 173.0, sd: 6.5}
-  height_gain_after_theta_cm:   # h1 - h_theta
-    female: {mean: 10.5, sd: 1.0}
-    male: {mean: 12.0, sd: 1.0}
-  s0:                      # pre-pubertal rate constant (lognormal: median, sigma of log)
-    female: {median: 0.13, sigma_log: 0.05}
-    male: {median: 0.11, sigma_log: 0.05}
-  s1:                      # pubertal rate constant
-    female: {median: 1.18, sigma_log: 0.10}
-    male: {median: 1.24, sigma_log: 0.10}
+  height_gain_after_theta_cm:   # h1 - h_theta; Berkeley
+    female: {mean: 11.3, sd: 1.5}
+    male: {mean: 12.7, sd: 1.7}
+  s0:                      # pre-pubertal rate constant (lognormal: median, sigma of log); Berkeley
+    female: {median: 0.128, sigma_log: 0.096}
+    male: {median: 0.109, sigma_log: 0.071}
+  s1:                      # pubertal rate constant; Berkeley
+    female: {median: 1.104, sigma_log: 0.116}
+    male: {median: 1.149, sigma_log: 0.119}
   sitting_ratio:           # sitting height / stature as a function of true maturity offset u
     adult: {mean: 0.515, sd: 0.008}
     child_excess: 0.030    # legs relatively short in childhood
@@ -103,11 +105,15 @@ injury:                          # KNOWN data-generating process: logit of weekl
     leg_length_velocity_cm_per_year: {centre: 3.0, scale: 2.0}
     weekly_hours: {centre: 8.0, scale: 4.0}
   growth_related:
-    intercept: -5.6
-    leg_length_velocity: 0.6
-    load_proxy: 0.4
-    velocity_x_load: 0.3
-    hours: 0.2
+    intercept: -7.347            # calibrated to 3.8% of athletes per season: calibration-95554bc0695a (D-120)
+    # Per scale unit (2 cm/y) of leg-length velocity: log(1.51) / 5.2 cm/y * 2 = 0.158.
+    # A 2-SD (5.2 cm/y) faster lower-limb growth rate carried 51% higher injury risk in academy
+    # football (Johnson et al., as reported by Hall & Erskine, Sports Med 2025). That estimate is
+    # for all injuries; using it for growth-related injury is conservative.
+    leg_length_velocity: 0.158
+    load_proxy: 0.4              # ASSUMPTION: no published estimate for a landing-load proxy
+    velocity_x_load: 0.3         # ASSUMPTION: the interaction the conditioned model is built for
+    hours: 0.2                   # ASSUMPTION
   non_contact_soft_tissue:
     intercept: -5.9
     post_phv: 0.9                # multiplies sigmoid(2 * true maturity offset)

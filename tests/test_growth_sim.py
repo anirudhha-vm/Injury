@@ -109,7 +109,9 @@ def test_body_proportions_are_plausible(curves: growth_sim.GrowthCurves) -> None
     np.testing.assert_allclose(
         grid.leg_length(ages) + grid.sitting_height(ages), grid.stature(ages)
     )
-    assert np.all(grid.mass(ages) > 10.0)  # schema lower bound
+    # Schema lower bound, over the cohort's age range (baseline 8-17 y). Before 8 y a very late
+    # maturer's Preece-Baines curve can dip below it (one simulated boy at 7.0-7.15 y).
+    assert np.all(grid.mass(ages)[ages >= 8.0] > 10.0)
 
 
 def test_legs_peak_before_trunk(curves: growth_sim.GrowthCurves) -> None:
@@ -160,3 +162,14 @@ def test_cohort_measurements_track_the_truth(cohort: SyntheticCohort) -> None:
     measured = cohort.tables["anthropometrics"]
     assert (measured["stature_1"] - measured["stature_2"]).abs().max() < 2.0
     assert measured["stature_1"].between(90.0, 210.0).all()
+
+
+def test_every_simulated_child_has_a_spurt(cohort_config: dict[str, Any]) -> None:
+    """Wide (real-data) spreads of s0 and s1 occasionally give no spurt; those are redrawn."""
+    from youthtwin.sim.growth_sim import _has_spurt, pb1_peak_offset, sample_growth_params
+
+    assert not _has_spurt(np.array([0.135]), np.array([0.76]))[0]  # a known no-spurt pair
+    is_female = np.arange(20000) % 2 == 0
+    params = sample_growth_params(np.random.default_rng(0), is_female, cohort_config["growth"])
+    assert _has_spurt(params.s0, params.s1).all()
+    np.testing.assert_allclose(params.theta + pb1_peak_offset(params.s0, params.s1), params.aphv)

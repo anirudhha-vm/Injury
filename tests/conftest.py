@@ -6,6 +6,7 @@ from typing import Any
 
 import pytest
 
+from cohort_settings import signal_cohort_config
 from youthtwin.features.person_period import PersonPeriod, build_person_period
 from youthtwin.sim.cohort import SyntheticCohort, generate_cohort
 from youthtwin.utils.config import load_config
@@ -13,7 +14,8 @@ from youthtwin.utils.config import load_config
 
 @pytest.fixture(scope="session")
 def cohort_config() -> dict[str, Any]:
-    return load_config("sim/cohort.yaml")
+    """Realistic cohort config plus the strong-signal overrides in sim/test_signal.yaml."""
+    return signal_cohort_config()
 
 
 @pytest.fixture(scope="session")

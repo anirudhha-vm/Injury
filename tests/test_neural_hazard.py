@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from cohort_settings import signal_cohort_config
 from youthtwin.eval import metrics
 from youthtwin.eval.ablation import RESULT_COLUMNS, ablation_report, run_ablation
 from youthtwin.features.person_period import build_person_period
@@ -363,7 +364,7 @@ def test_growth_draw_arrays_replace_means_and_keep_sds() -> None:
 @pytest.fixture(scope="module")
 def small_study() -> dict[str, Any]:
     """A small synthetic cohort taken through the real pose pipeline."""
-    cohort_config = load_config("sim/cohort.yaml")
+    cohort_config = signal_cohort_config()
     cohort_config.update(n_athletes=50, seed=11, follow_up_weeks=30)
     cohort = generate_cohort(cohort_config)
     sequences, excluded = dataset.cohort_sequences(

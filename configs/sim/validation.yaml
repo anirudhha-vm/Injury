@@ -1,0 +1,38 @@
+# Synthetic markerless-vs-mocap validation study (Paper A layer; D-121). SYNTHETIC: no public
+# dataset of children with both smartphone video and motion capture is openly downloadable
+# (OpenCap and BioCV need a login or a signed agreement). Run by scripts/sim_study_validation.py.
+synthetic: true
+seed: 20261022
+participants_per_group: {pre_phv: 12, circa_phv: 12, post_phv: 12}   # 36, as planned for Paper A
+# Body size relative to the camera frame (stature / adult stature). Same camera distance for
+# everyone, so a smaller child spans fewer pixels and the same pixel error costs more degrees.
+# ASSUMPTION, from typical statures (about 140, 155, 170 cm against 170 cm).
+body_scale: {pre_phv: 0.82, circa_phv: 0.91, post_phv: 1.0}
+proportion_female: 0.5
+trials_per_participant: 3
+fps: 60.0                    # typical smartphone video
+truth:                       # per participant, true task kinematics (ASSUMPTION)
+  peak_knee_flexion_deg: {mean: 80.0, sd: 12.0}
+  peak_fppa_deg: {mean: 6.0, sd: 6.0}
+  trial_sd_deg: 3.0
+mocap:                       # marker-based reference, in pixels at adult size
+  participant_offset_sd_px: 0.5   # marker placement (ASSUMPTION; about 1-2 mm)
+  frame_noise_sd_px: 0.3
+markerless:
+  # Landmark offset SD at adult size, split 2:1 between participant and trial. Calibrated so
+  # that peak knee flexion in adult-size participants has a mean absolute error of 2.1 deg:
+  # [[CITED: Barzyk et al. 2024 Eur J Sport Sci 24:1452, smartphone vs Vicon, CMJ, MAE 2.1 deg]]
+  offset_sd_px: null         # set by the calibration step inside the script (see run.json)
+  trial_share: 0.5           # trial offset SD = this x participant offset SD (ASSUMPTION)
+  frame_noise_sd_px: 2.0     # ASSUMPTION; mostly removed by the low-pass filter
+calibration:
+  target_mae_deg: 2.1
+  variable: knee_flexion_max
+  n_participants: 60
+variables:                   # features reported. Not knee flexion at initial contact: the skeleton
+                             # simulator fixes it at 20 deg, so its agreement statistics mean nothing
+  - knee_flexion_max
+  - knee_fppa_at_peak_knee_flexion
+  - knee_fppa_max
+  - hip_flexion_max
+n_replicate_studies: 100     # repeated whole studies, for the precision of the estimates

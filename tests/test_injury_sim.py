@@ -175,3 +175,24 @@ def test_cohort_recovers_the_generating_directions(cohort: SyntheticCohort) -> N
         observed = (cohort.tables["injuries"]["outcome_group"] == group).sum()
         # Poisson-ish tolerance around the expected count from the true hazards.
         assert abs(observed - expected) < 4 * np.sqrt(expected)
+
+
+def test_realistic_config_matches_the_published_incidence() -> None:
+    """Without test overrides, about 3.8% of athletes have a growth-related injury per season."""
+    import importlib.util
+
+    from youthtwin.sim.cohort import generate_cohort
+    from youthtwin.utils.config import load_config, repo_root
+
+    spec = importlib.util.spec_from_file_location(
+        "calibrate", repo_root() / "scripts" / "calibrate_simulation.py"
+    )
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    config = load_config("sim/cohort.yaml")
+    target = load_config("sim/calibration.yaml")["target_proportion"]
+    config["n_athletes"] = 1500
+    weekly = generate_cohort(config).truth["athlete_weeks_truth"]
+    expected = module.expected_proportion(weekly, "hazard_growth_related", 0.0)
+    assert expected == pytest.approx(target, abs=0.006)

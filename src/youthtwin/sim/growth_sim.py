@@ -130,6 +130,17 @@ def _by_sex(
     return out
 
 
+_MAX_REDRAWS = 100
+
+
+def _has_spurt(s0: FloatArray, s1: FloatArray) -> BoolArray:
+    """Whether each (s0, s1) pair gives an interior pubertal velocity peak."""
+    grid = np.arange(-_PEAK_SEARCH_HALF_WIDTH_YEARS, _PEAK_SEARCH_HALF_WIDTH_YEARS, 0.01)
+    shape = _pb1_velocity_shape(grid[None, :], s0[:, None], s1[:, None])
+    interior = (shape[:, 1:-1] > shape[:, :-2]) & (shape[:, 1:-1] >= shape[:, 2:])
+    return np.asarray(interior.any(axis=1), dtype=np.bool_)
+
+
 def sample_growth_params(
     rng: np.random.Generator, is_female: BoolArray, config: Mapping[str, Any]
 ) -> GrowthParams:
@@ -139,6 +150,18 @@ def sample_growth_params(
     gain = np.abs(_by_sex(rng, is_female, config["height_gain_after_theta_cm"], lognormal=False))
     s0 = _by_sex(rng, is_female, config["s0"], lognormal=True)
     s1 = _by_sex(rng, is_female, config["s1"], lognormal=True)
+    # A few (s0, s1) pairs in the tails give a curve with no pubertal spurt. Every simulated
+    # child has one (as every child in the reference data scored against does), so such pairs
+    # are redrawn.
+    for _ in range(_MAX_REDRAWS):
+        no_spurt = ~_has_spurt(s0, s1)
+        if not no_spurt.any():
+            break
+        redraw = is_female[no_spurt]
+        s0[no_spurt] = _by_sex(rng, redraw, config["s0"], lognormal=True)
+        s1[no_spurt] = _by_sex(rng, redraw, config["s1"], lognormal=True)
+    else:
+        raise ValueError("Growth parameters keep producing curves without a pubertal spurt")
     ratio = config["sitting_ratio"]["adult"]
     return GrowthParams(
         is_female=is_female,

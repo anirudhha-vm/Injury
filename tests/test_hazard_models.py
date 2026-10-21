@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 import pytest
 
+from cohort_settings import signal_cohort_config
 from youthtwin.eval import splits
 from youthtwin.features.person_period import PersonPeriod, build_person_period
 from youthtwin.models.baselines import baseline_features, make_baseline
@@ -47,7 +48,7 @@ def baseline_config() -> dict[str, Any]:
 @pytest.fixture(scope="module")
 def large(person_period_config: dict[str, Any], hazard_config: dict[str, Any]) -> PersonPeriod:
     """A larger synthetic cohort so that effect directions are not decided by chance."""
-    config = load_config("sim/cohort.yaml")
+    config = signal_cohort_config()
     config.update(n_athletes=1200, seed=7)
     cohort = generate_cohort(config)
     return build_person_period(

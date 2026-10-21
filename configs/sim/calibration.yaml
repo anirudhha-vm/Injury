@@ -1,0 +1,6 @@
+# Calibration of the synthetic injury process (scripts/calibrate_simulation.py, D-120).
+outcome_group: growth_related
+# Proportion of athletes with >= 1 growth-related injury per season:
+# [[CITED: 603 apophyseal injuries in 16,024 player-seasons, BJSM 2025;59:1663]] = 0.038.
+target_proportion: 0.038
+n_athletes: 3000             # large, so the simulated proportion has little noise

@@ -48,6 +48,9 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `external/berkeley.yaml` | Source (URL, checksum), reference-APHV rules and season-window design for the real Berkeley growth study | ✅ |
 | `external/runners.yaml` | Source files and checksums of the real runners' injury dataset, and its evaluation settings | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions except the cited mean age at PHV) | ✅ |
+| `sim/calibration.yaml` | Target incidence for calibrating the synthetic injury process (cited) | ✅ |
+| `sim/validation.yaml` | Synthetic markerless-vs-mocap study: groups, body scale, error model, calibration target (cited), replicates | ✅ |
+| `sim/test_signal.yaml` | Strong-signal overrides of the cohort config, used **only** by pipeline tests | ✅ |
 | `io/qc.yaml` | Anthropometry QC limits: duplicate disagreement, sitting ratio, stature decrease, maximum height velocity | ✅ |
 | `validation/agreement.yaml` | Limits-of-agreement level, confidence level, provisional RMSE acceptance limit, maturity band, alignment window | ✅ |
 
@@ -75,6 +78,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `sim/growth_sim.py` | Preece–Baines height curves with an exactly known age at PHV; sitting height, leg length, mass; visit schedule; measurement error | ✅ |
 | `sim/movement_sim.py` | Session-level screening features with a per-athlete trait and maturity shift; synthetic drop-jump trials per session driven by the load proxy | ✅ |
 | `sim/injury_sim.py` | Weekly exposure (persistent within athlete, differing between athletes) and cause-specific injuries from a known hazard process with time-loss exclusion | ✅ |
+| `sim/validation_sim.py` | Synthetic markerless-vs-mocap study: two noisy observations of the same simulated drop jumps through the real pose pipeline; errors scale with body size | ✅ |
 | `sim/skeleton_sim.py` | Stylised synthetic skeleton sequences (drop jump, single-leg squat) with exactly known angles and event frames, for testing the pose pipeline | ✅ |
 | `sim/truth.py` | True 4-week event probability per athlete-week of a synthetic cohort, for scoring only | ✅ |
 | `sim/cohort.py` | Assembles schema-shaped tables plus separate truth tables; tags everything synthetic; writes parquet | ✅ |
@@ -149,6 +153,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `fetch_public_data.py` | Downloads the public datasets into git-ignored `data/external/` and verifies their SHA-256 | ✅ |
 | `real_growth_berkeley.py` | Growth twin vs Moore/Mirwald on the real Berkeley data; writes `reference.csv`, `per_athlete.csv`, `summary.csv`, `aphv_real.png` to `outputs/real_growth_berkeley/<run_id>/` | ✅ |
 | `real_risk_runners.py` | Risk models on real injury outcomes (runners) under three split schemes; athlete-bootstrap intervals, paired differences, calibration, leakage inflation; to `outputs/real_risk_runners/<run_id>/` | ✅ |
+| `calibrate_simulation.py` | Finds the growth-related hazard intercept that gives the published incidence, exactly from the true hazards; writes `outputs/calibration/<run_id>/` | ✅ |
+| `sim_study_validation.py` | Synthetic validity study: calibrates the markerless error, simulates the planned 36-participant study, repeats it for precision; to `outputs/sim_study_validation/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
@@ -195,6 +201,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_reference_aphv.py` | Reference fit that misses a known Preece-Baines peak; children without a spurt or coverage not excluded | ✅ |
 | `test_berkeley.py` | Wrong recoding of the Berkeley data; windows longer than a season, incomplete or not reproducible; equations not matching; real data not reaching the growth model | ✅ |
 | `test_runners.py` | Unbounded ratios kept; label or time used as input; grouped folds sharing runners; temporal split overlapping; predictions not held out | ✅ |
+| `test_validation_sim.py` | Validation pairs not from the pipeline, not reproducible, or error not growing with offset or with smaller body size | ✅ |
+| `cohort_settings.py` | Test helper: the realistic cohort config plus `sim/test_signal.yaml` | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
 | `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |

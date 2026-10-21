@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pytest
 
+from cohort_settings import signal_cohort_config
 from youthtwin.dashboard import figures
 from youthtwin.dashboard.bundle import TABLES, Bundle, build_bundle, load_bundle, write_bundle
 from youthtwin.growth import splines
@@ -172,7 +173,7 @@ def _posterior(athletes: list[str], sex: str, seed: int) -> SitarPosterior:
 
 @pytest.fixture(scope="module")
 def bundle() -> Bundle:
-    cohort_config = load_config("sim/cohort.yaml")
+    cohort_config = signal_cohort_config()
     cohort_config.update(n_athletes=60, seed=5, follow_up_weeks=30)
     cohort = generate_cohort(cohort_config)
     athletes = cohort.tables["athletes"]

@@ -68,4 +68,4 @@ Pre-registered configurations:
 
 ## Simulation study (synthetic data only)
 
-A synthetic cohort of [[SPEC: 300]] athletes followed for [[SPEC: 52]] weeks was generated (seed [[SPEC: 20261009]]) with Preece-Baines model 1 growth curves; true age at PHV had mean [[SPEC: 10.8]] (girls) and [[SPEC: 13.4]] (boys) years, SD [[SPEC: 1.0]]. Visits were every [[SPEC: 42, 56]] days with a missed-visit probability of [[SPEC: 0.1]]. Injuries were generated from known weekly hazards. All generator parameters are assumptions chosen for plausibility (TODO(human): cite or replace). Synthetic results are reported only in this section.
+A synthetic cohort of [[SPEC: 300]] athletes followed for [[SPEC: 52]] weeks was generated (seed [[SPEC: 20261009]]) with Preece-Baines model 1 growth curves; true age at PHV had mean [[SPEC: 10.8]] (girls) and [[SPEC: 13.4]] (boys) years, SD [[SPEC: 1.12]]. Visits were every [[SPEC: 42, 56]] days with a missed-visit probability of [[SPEC: 0.1]]. Injuries were generated from known weekly hazards. All generator parameters are assumptions chosen for plausibility (TODO(human): cite or replace). Synthetic results are reported only in this section.
