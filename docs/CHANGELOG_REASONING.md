@@ -818,3 +818,14 @@ from any source; the synthetic path calls it after joining its tables. Behaviour
 
 **D-117 · Video validity layer blocked on the user.** OpenCap's validation data needs a SimTK
 login; BioCV needs a signed data-use agreement. Both are the user's decision.
+
+**D-118 · The risk-evaluation machinery is tested on real injury outcomes from adult runners.**
+Lövdal, den Hartigh & Azzopardi (2021), DataverseNL doi:10.34894/UWU9PV, CC0: 74 runners,
+42,798 overlapping event days, 575 injury days. Three schemes: runner-grouped folds (primary,
+N3), a temporal hold-out of the last 25% of calendar time, and row-level folds included only to
+measure how much leaking a runner across folds inflates performance. The file's own week-ratio
+columns divide by zero in rest weeks (values to 2e8); they are replaced by
+`log((a + 1) / (b + 1))` of weekly kilometres, computed from each row alone, so nothing is
+learned from other rows (N4). The existing builders (`make_hazard_logit`, `make_hazard_xgb`) and
+the leakage guard are reused unchanged. The metric is labelled `time_dependent_auc_4wk` by the
+shared config; here it is the AUC for injury on the event day.

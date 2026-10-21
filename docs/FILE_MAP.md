@@ -116,6 +116,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `eval/cohort_size.py` | Cohort-size simulation study: out-of-fold metrics of the tabular models on replicate synthetic cohorts of each size, scored also against the known true risk; summary across replicates | ✅ |
 | `external/reference_aphv.py` | Reference age at PHV from a dense real growth record: Preece-Baines model 1 fit, smoothing-spline cross-check, exclusion rules | ✅ |
 | `external/berkeley.py` | Loads the Berkeley Child Guidance Study (real), draws one-season windows per child, computes Moore/Mirwald from the same windows | ✅ |
+| `external/runners.py` | Loads the real runners' injury dataset (bounded load ratios, week suffixes), model builders, the three split schemes (runner-grouped, temporal, row-level leak demonstration) and held-out prediction | ✅ |
 | `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
 | `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
 | `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
@@ -147,6 +148,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `sim_study_sizes.py` | Runs the cohort-size study; writes `replicates.csv`, `summary.csv` and `performance_by_size.png` to `outputs/sim_study_sizes/<run_id>/` | ✅ |
 | `fetch_public_data.py` | Downloads the public datasets into git-ignored `data/external/` and verifies their SHA-256 | ✅ |
 | `real_growth_berkeley.py` | Growth twin vs Moore/Mirwald on the real Berkeley data; writes `reference.csv`, `per_athlete.csv`, `summary.csv`, `aphv_real.png` to `outputs/real_growth_berkeley/<run_id>/` | ✅ |
+| `real_risk_runners.py` | Risk models on real injury outcomes (runners) under three split schemes; athlete-bootstrap intervals, paired differences, calibration, leakage inflation; to `outputs/real_risk_runners/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
@@ -192,6 +194,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_cohort_size_study.py` | Cohort-size study replicates that are not independent cohorts or not reproducible; summary not matching its replicates; unknown models accepted | ✅ |
 | `test_reference_aphv.py` | Reference fit that misses a known Preece-Baines peak; children without a spurt or coverage not excluded | ✅ |
 | `test_berkeley.py` | Wrong recoding of the Berkeley data; windows longer than a season, incomplete or not reproducible; equations not matching; real data not reaching the growth model | ✅ |
+| `test_runners.py` | Unbounded ratios kept; label or time used as input; grouped folds sharing runners; temporal split overlapping; predictions not held out | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
 | `test_api_contract.py` | Models with differing call signatures or deprecated arguments (v2); what-if results presented as causal | ✅ |

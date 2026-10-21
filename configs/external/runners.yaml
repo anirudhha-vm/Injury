@@ -9,3 +9,29 @@ source:
     - {id: 47972, name: day_approach_maskedID_timeseries.csv, sha256: 9c06ecefae9caa4ca831c08c7ebe4d25b0b01e8aa285df526a4e6791c673b6e8}
     - {id: 422690, name: README.txt, sha256: 60cb848f9cb0c18c374af03627ff698b3e31dbc49e614afe21f0c7931e1e04f0}
   url_template: https://dataverse.nl/api/access/datafile/{id}
+label: injury                # injury on the event day (the dataset's own flag)
+weeks: 3                     # feature weeks before the event day: w0 = the week before
+origin_date: "2012-01-01"    # nominal; the file gives days since its first record
+n_folds: 5
+temporal_holdout_fraction: 0.25   # N3: last quarter of calendar time
+seed: 20261021
+load_only_predictors:        # parsimonious reference model: load in each of the three weeks
+  - total_kms_w0             # and the week-to-week change (ACWR-like)
+  - total_kms_w1
+  - total_kms_w2
+  - log_ratio_kms_w0_w1
+models: [load_only, penalised_logistic, gradient_boosting]
+reference_model: load_only
+penalised_logistic:          # elastic net; as hazard_logit in models/hazard.yaml, no splines
+  penalty: elastic_net
+  C: 0.1                     # ASSUMPTION: 66 correlated inputs; stronger shrinkage than hazard.yaml
+  l1_ratio: 0.5
+  max_iter: 5000
+  class_weight: null
+  n_spline_knots: 4
+  spline_terms: []
+gradient_boosting: {n_estimators: 300, max_depth: 3, learning_rate: 0.03, subsample: 0.8, colsample_bytree: 0.5, min_child_weight: 20}   # ASSUMPTION
+metrics: [time_dependent_auc_4wk, pr_auc, brier_score, calibration_intercept, calibration_slope]
+bootstrap_resamples: 500
+published_auc:               # what the dataset's authors reported (week approach), for context
+  value: 0.678               # [[CITED: Lövdal et al. 2021 IJSPP 16(10):1522]]
