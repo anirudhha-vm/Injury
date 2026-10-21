@@ -39,6 +39,12 @@ def _number(value: Any, digits: int) -> str:
     return text.replace("-", "$-$") if text.startswith("-") else text
 
 
+def span(low: Any, high: Any, digits: int = 2) -> str:
+    """An interval: an en dash between non-negative bounds, "to" when a bound is negative."""
+    joiner = "--" if float(low) >= 0 and float(high) >= 0 else " to "
+    return f"{_number(low, digits)}{joiner}{_number(high, digits)}"
+
+
 def percent(value: Any, digits: int = 0) -> str:
     """A proportion as a LaTeX percentage."""
     if hasattr(value, "item"):
@@ -137,6 +143,12 @@ def real_growth(run: Path | None, values: Values) -> str:
         "BerkGirlsAPHV",
         "BerkBoysAPHV",
         "BerkWindows",
+        "BerkBands",
+        "BerkTwinMAEWithin",
+        "BerkMooreMAEWithin",
+        "BerkBandsBetter",
+        "BerkCoverageBest",
+        "BerkCoverageWorst",
     ]
     if run is None:
         values.pending(*names)
@@ -172,6 +184,17 @@ def real_growth(run: Path | None, values: Values) -> str:
     values.put("BerkCoverageFar", percent(far["covered"].mean()), rid)
     values.number("BerkTwinMAENear", near["posterior_abs_error"].mean(), rid)
     values.number("BerkMooreMAENear", near["point_abs_error"].mean(), rid)
+    bands = full[full["grouping"] == "band"]
+    within = bands[bands["group"].astype(str) == "within 1"]
+    if not within.empty:
+        values.number("BerkTwinMAEWithin", within.iloc[0]["posterior_mae_years"], rid)
+        values.number("BerkMooreMAEWithin", within.iloc[0]["point_mae_years"], rid)
+    values.number("BerkBands", len(bands), rid)
+    values.number(
+        "BerkBandsBetter", int((bands["posterior_mae_years"] < bands["point_mae_years"]).sum()), rid
+    )
+    values.put("BerkCoverageBest", percent(bands["coverage"].max()), rid)
+    values.put("BerkCoverageWorst", percent(bands["coverage"].min()), rid)
     strict = summary[
         (summary["reference_subset"] == "strict reference") & (summary["grouping"] == "all")
     ].iloc[0]
@@ -272,7 +295,7 @@ def real_risk(run: Path | None, values: Values) -> str:
         ].iloc[0]
 
     def ci(r: pd.Series, digits: int = 2) -> str:
-        return f"{_number(r['ci_low'], digits)}--{_number(r['ci_high'], digits)}"
+        return span(r["ci_low"], r["ci_high"], digits)
 
     for model, tag in (
         ("penalised_logistic", "Logit"),
@@ -297,7 +320,7 @@ def real_risk(run: Path | None, values: Values) -> str:
         (differences["model"] == "penalised_logistic") & (differences["metric"] == PRIMARY)
     ].iloc[0]
     values.number("RunDiffLogit", d["difference"], rid)
-    values.put("RunDiffLogitCI", f"{_number(d['ci_low'], 2)}--{_number(d['ci_high'], 2)}", rid)
+    values.put("RunDiffLogitCI", span(d["ci_low"], d["ci_high"], 2), rid)
     for model, tag in (
         ("gradient_boosting", "Boost"),
         ("penalised_logistic", "Logit"),
@@ -305,9 +328,7 @@ def real_risk(run: Path | None, values: Values) -> str:
     ):
         infl = inflation.loc[model]
         values.number(f"RunInfl{tag}", infl["leaky_minus_grouped"], rid, 3)
-        values.put(
-            f"RunInfl{tag}CI", f"{_number(infl['ci_low'], 3)}--{_number(infl['ci_high'], 3)}", rid
-        )
+        values.put(f"RunInfl{tag}CI", span(infl["ci_low"], infl["ci_high"], 3), rid)
 
     rows: list[list[str]] = []
     groups: list[int] = []
@@ -414,7 +435,7 @@ def validity(run: Path | None, values: Values) -> str:
                     _number(a["bias"], 1),
                     f"{_number(a['loa_low'], 1)} to {_number(a['loa_high'], 1)}",
                     _number(a["icc21"], 2),
-                    f"{_number(p['rmse_mean'], 1)} ({_number(p['rmse_p025'], 1)}--{_number(p['rmse_p975'], 1)})",
+                    f"{_number(p['rmse_mean'], 1)} ({span(p['rmse_p025'], p['rmse_p975'], 1)})",
                     percent(p["share_studies_meeting_threshold"]),
                 ]
             )
@@ -511,9 +532,7 @@ def sim_risk(run: Path | None, values: Values) -> str:
             values.pending(f"Sim{tag}Auc", f"Sim{tag}AucCI", f"Sim{tag}Slope")
             continue
         values.number(f"Sim{tag}Auc", auc["estimate"], rid)
-        values.put(
-            f"Sim{tag}AucCI", f"{_number(auc['ci_low'], 2)}--{_number(auc['ci_high'], 2)}", rid
-        )
+        values.put(f"Sim{tag}AucCI", span(auc["ci_low"], auc["ci_high"], 2), rid)
         values.number(f"Sim{tag}Slope", slope["estimate"], rid)
     labels = {
         "age_only": "Age only",
@@ -531,8 +550,8 @@ def sim_risk(run: Path | None, values: Values) -> str:
         rows.append(
             [
                 label,
-                f"{_number(auc['estimate'], 2)} ({_number(auc['ci_low'], 2)}--{_number(auc['ci_high'], 2)})",
-                f"{_number(slope['estimate'], 2)} ({_number(slope['ci_low'], 2)}--{_number(slope['ci_high'], 2)})",
+                f"{_number(auc['estimate'], 2)} ({span(auc['ci_low'], auc['ci_high'], 2)})",
+                f"{_number(slope['estimate'], 2)} ({span(slope['ci_low'], slope['ci_high'], 2)})",
             ]
         )
     return tabular("lrr", ["Model", "AUC (95\\% CI)", "Calibration slope (95\\% CI)"], rows)
@@ -709,7 +728,7 @@ def cohort_size(run: Path | None, values: Values) -> str:
             cells.append(
                 "n/a"
                 if match.empty
-                else f"{_number(match['mean'].iloc[0], 2)} ({_number(match['low'].iloc[0], 2)}--{_number(match['high'].iloc[0], 2)})"
+                else f"{_number(match['mean'].iloc[0], 2)} ({span(match['low'].iloc[0], match['high'].iloc[0], 2)})"
             )
         rows.append([label, *cells])
     slope = [_number(mean("hazard_logit", "calibration_slope", n), 2) for n in sizes]

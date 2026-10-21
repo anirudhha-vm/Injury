@@ -38,14 +38,17 @@ movement features from smartphone video. Each layer is tested on the best availa
 On real longitudinal growth records of \BerkChildren{} children (Berkeley Child Guidance
 Study), given one season of three measurements per child, the twin estimated age at PHV with a
 mean absolute error of \BerkTwinMAE{}~years against \BerkMooreMAE{}~years for the Moore
-equation, with \BerkCoverage{} coverage of nominal \SpecInterval{} intervals. On real injury
-data from \RunRunners{} competitive runners, athlete-grouped evaluation gave an AUC of
+equation, but its nominal \SpecInterval{} intervals covered the truth in only \BerkCoverage{}
+of cases. On real injury data from \RunRunners{} competitive runners, athlete-grouped evaluation gave an AUC of
 \RunAucLogit{} (\RunAucLogitCI{}), and allowing an athlete's days on both sides of a split
 inflated AUC by up to \RunInflBoost{}. A simulation study calibrated to published incidence,
 growth-velocity effects and smartphone measurement error shows that knee flexion meets a
 \SpecRmseLimit{}$^\circ$ agreement limit at every maturity stage, whereas frontal-plane knee
-angles do not reliably do so before PHV, and quantifies the cohort size a prospective study
-needs. All simulated results are labelled as such and are not findings about athletes.
+angles do not reliably do so before PHV. Under published incidence and effect sizes even the
+true risk reached an AUC of only \SizeTrueAucLarge{}, models learned from \SizeLarge{}
+athlete-seasons stayed near chance, and propagated growth uncertainty yielded risk intervals
+containing the true risk in \PropCoverage{} of athlete-weeks. All simulated results are labelled
+as such and are not findings about athletes.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -183,16 +186,23 @@ analysed.
 
 \subsection{Growth twin on real growth records}
 Mean reference age at PHV was \BerkGirlsAPHV{} years in girls and \BerkBoysAPHV{} in boys.
-Table~\ref{tab:growth} compares the estimators over \BerkWindows{} child-seasons. Overall, the
-twin's mean absolute error was \BerkTwinMAE{}~years against \BerkMooreMAE{}~years for Moore
-and \BerkMirwaldMAE{}~years for Mirwald (boys), with mean biases of \BerkTwinBias{} and
-\BerkMooreBias{}~years. Nominal \SpecInterval{} intervals covered the reference in \BerkCoverage{}
-of child-seasons: \BerkCoverageNear{} for seasons within three years of PHV and
-\BerkCoverageFar{} further away. Within three years of PHV the errors were \BerkTwinMAENear{}
-and \BerkMooreMAENear{}~years. Restricting scoring to the \BerkStrict{} children whose reference
-methods agreed closely gave \BerkStrictTwinMAE{} and \BerkStrictMooreMAE{}~years and
-\BerkStrictCoverage{} coverage. Across fits the largest R-hat was \BerkRhat{} and the smallest
-bulk effective sample size \BerkESS{}.
+Table~\ref{tab:growth} and Fig.~\ref{fig:growth} compare the estimators over \BerkWindows{}
+child-seasons. From a single season of three measurements, the twin's mean absolute error was
+\BerkTwinMAE{}~years against \BerkMooreMAE{}~years for the Moore equation and
+\BerkMirwaldMAE{}~years for Mirwald (boys), with mean biases of \BerkTwinBias{} and
+\BerkMooreBias{}~years. The twin was more accurate than Moore in \BerkBandsBetter{} of
+\BerkBands{} bands of distance from PHV; within three years of PHV the errors were
+\BerkTwinMAENear{} and \BerkMooreMAENear{}~years. The result held when scoring was restricted
+to the \BerkStrict{} children whose two reference methods agreed closely (\BerkStrictTwinMAE{}
+against \BerkStrictMooreMAE{}~years).
+
+The intervals were too narrow. Nominal \SpecInterval{} intervals covered the reference in
+\BerkCoverage{} of child-seasons (\BerkStrictCoverage{} in the strict subset): \BerkCoverageNear{}
+within three years of PHV and \BerkCoverageFar{} further away, ranging from \BerkCoverageBest{}
+in the best band to \BerkCoverageWorst{} in the worst, which was more than three years before
+PHV. Mixing was incomplete for some shared parameters (largest R-hat \BerkRhat{}, smallest bulk
+effective sample size \BerkESS{}, no divergences), so interval widths in particular should be
+read as provisional.
 
 \begin{table*}[!t]
 \caption{Age at PHV from one season of measurements, real Berkeley data. Mean absolute error and
@@ -326,20 +336,24 @@ independent simulated cohorts.}
 \input{../tables/ieee_tab_sizes.tex}
 \end{table*}
 
-\begin{figure}[!t]
+\begin{figure*}[!t]
 \centering
-\IfFileExists{../figures/ieee_fig_sizes.png}{\includegraphics[width=\columnwidth]{ieee_fig_sizes.png}}{\fbox{\PENDINGFIG}}
+\IfFileExists{../figures/ieee_fig_sizes.png}{\includegraphics[width=\textwidth]{ieee_fig_sizes.png}}{\fbox{\PENDINGFIG}}
 \caption{Performance against cohort size (SYNTHETIC); labels give the mean number of athletes
 with a growth-related injury.}
 \label{fig:sizes}
-\end{figure}
+\end{figure*}
 
 \section{Discussion}
-\emph{Growth twin.} On real children the twin's estimate is compared directly with the
-equations practitioners use, using the same single season of data. Its value lies as much in
-the interval as in the point estimate: the interval tells a practitioner when the data do not
-determine maturity timing, which an equation cannot. Coverage is the property to check before
-its uncertainty is used downstream, and it should be judged separately near and far from PHV.
+\emph{Growth twin.} On real children, with the same single season of data, the twin estimated
+age at PHV more accurately than the equations practitioners use, in every band of distance from
+PHV, including the year around PHV where growth-related injuries cluster (\BerkTwinMAEWithin{}
+against \BerkMooreMAEWithin{}~years). Its intervals, however, were too narrow, most of
+all several years before PHV, where one season of steady childhood growth carries little
+information about when the spurt will come. Two consequences follow: the interval, not only the
+point estimate, should be reported, and before it is propagated into risk its coverage must be
+improved, for example by letting the prior spread grow with distance from PHV or by using more
+than one season of measurements.
 
 \emph{Evaluation.} The runners' data show on real outcomes why athlete-grouped splitting is
 non-negotiable: leaking an athlete across folds raised AUC by up to \RunInflBoost{}, enough to
