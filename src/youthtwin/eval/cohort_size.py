@@ -13,7 +13,9 @@ from __future__ import annotations
 
 import copy
 from collections.abc import Callable, Mapping, Sequence
+from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+from multiprocessing import get_context
 from typing import Any
 
 import numpy as np
@@ -128,34 +130,57 @@ def evaluate_cohort(
     return pd.DataFrame(rows, columns=["model", "metric", "value"])
 
 
+def _one_replicate(
+    job: tuple[int, int, Mapping[str, Any], Mapping[str, Any], Mapping[str, Any]],
+) -> pd.DataFrame:
+    size, replicate, cohort_config, study_config, configs = job
+    config = copy.deepcopy(dict(cohort_config))
+    config["n_athletes"] = int(size)
+    config["seed"] = int(cohort_config["seed"]) + replicate
+    table = evaluate_cohort(
+        generate_cohort(config),
+        label=study_config["label"],
+        models=study_config["models"],
+        configs=configs,
+        n_folds=int(study_config["n_folds"]),
+        seed=replicate,
+    )
+    table.insert(0, "cohort_seed", config["seed"])
+    table.insert(0, "replicate", replicate)
+    table.insert(0, "n_athletes", int(size))
+    return table
+
+
 def run_study(
     cohort_config: Mapping[str, Any],
     study_config: Mapping[str, Any],
     configs: Mapping[str, Any],
     *,
     on_replicate: Callable[[int, int], None] | None = None,
+    workers: int = 1,
 ) -> pd.DataFrame:
-    """Every size x replicate; one tidy row per model and metric."""
+    """Every size x replicate; one tidy row per model and metric.
+
+    With ``workers > 1`` the replicates run in parallel processes; the result is identical,
+    because each replicate depends only on its own seed.
+    """
+    jobs = [
+        (int(size), replicate, cohort_config, study_config, configs)
+        for size in study_config["cohort_sizes"]
+        for replicate in range(int(study_config["n_replicates"]))
+    ]
     frames = []
-    for size in study_config["cohort_sizes"]:
-        for replicate in range(int(study_config["n_replicates"])):
-            config = copy.deepcopy(dict(cohort_config))
-            config["n_athletes"] = int(size)
-            config["seed"] = int(cohort_config["seed"]) + replicate
-            table = evaluate_cohort(
-                generate_cohort(config),
-                label=study_config["label"],
-                models=study_config["models"],
-                configs=configs,
-                n_folds=int(study_config["n_folds"]),
-                seed=replicate,
-            )
-            table.insert(0, "cohort_seed", config["seed"])
-            table.insert(0, "replicate", replicate)
-            table.insert(0, "n_athletes", int(size))
-            frames.append(table)
+    if workers > 1:
+        with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn")) as pool:
+            for job, table in zip(jobs, pool.map(_one_replicate, jobs), strict=True):
+                frames.append(table)
+                if on_replicate is not None:
+                    on_replicate(job[0], job[1])
+    else:
+        for job in jobs:
+            frames.append(_one_replicate(job))
             if on_replicate is not None:
-                on_replicate(int(size), replicate)
+                on_replicate(job[0], job[1])
     return pd.concat(frames, ignore_index=True)[REPLICATE_COLUMNS]
 
 

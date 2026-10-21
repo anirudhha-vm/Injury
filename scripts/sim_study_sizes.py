@@ -64,6 +64,7 @@ def _figure(summary: pd.DataFrame, level: float) -> Figure:
 def main(
     n_replicates: int | None = None,
     sizes: str | None = None,
+    workers: int = 1,
     out_dir: Path | None = None,
 ) -> None:
     study = load_config("eval/cohort_size_study.yaml")
@@ -89,7 +90,9 @@ def main(
     def progress(size: int, replicate: int) -> None:
         typer.echo(f"  {size} athletes, cohort {replicate + 1} [{time.time() - started:.0f} s]")
 
-    replicates = cohort_size.run_study(cohort_config, study, configs, on_replicate=progress)
+    replicates = cohort_size.run_study(
+        cohort_config, study, configs, on_replicate=progress, workers=workers
+    )
     summary = cohort_size.summarise(replicates, float(study["interval_level"]))
     replicates.to_csv(target / "replicates.csv", index=False)
     summary.to_csv(target / "summary.csv", index=False)

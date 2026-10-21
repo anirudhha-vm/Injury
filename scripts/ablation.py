@@ -55,6 +55,7 @@ def main(
     n_folds: int = 5,
     ensemble_size: int | None = None,
     max_epochs: int | None = None,
+    pretrain_epochs: int | None = None,
     seed: int = 0,
     threads: int = 4,
     out_dir: Path | None = None,
@@ -78,6 +79,8 @@ def main(
         configs["neural"]["ensemble_size"] = ensemble_size
     if max_epochs is not None:
         configs["neural"]["max_epochs"] = max_epochs
+    if pretrain_epochs is not None:
+        configs["neural"]["pretraining"]["epochs"] = pretrain_epochs
     run_config = {"cohort": cohort_config, **configs, "label": label, "folds": n_folds}
     metadata = run_metadata(seed=seed, config=run_config, synthetic=True)
     run_id = f"ablation-{config_hash(run_config)}"
