@@ -462,6 +462,8 @@ def sim_growth(run: Path | None, values: Values) -> str:
         "SimCoverage",
         "SimCoverageNear",
         "SimCoverageFar",
+        "SimRhat",
+        "SimESS",
     ]
     if run is None:
         values.pending(*names)
@@ -475,6 +477,10 @@ def sim_growth(run: Path | None, values: Values) -> str:
     values.number("SimTwinMAE", overall["posterior_mae_years"], rid)
     values.number("SimMooreMAE", overall["point_mae_years"], rid)
     values.put("SimCoverage", percent(overall["coverage"]), rid)
+    fits = _record(run).get("fits", {})
+    if fits:
+        values.number("SimRhat", max(float(f["max_rhat"]) for f in fits.values()), rid)
+        values.number("SimESS", int(min(float(f["min_ess_bulk"]) for f in fits.values())), rid)
     if "baseline_age" in scores.columns:
         distance = (scores["baseline_age"] + 0.5 - scores["true_aphv"]).abs()
         values.put("SimCoverageNear", percent(scores.loc[distance <= 3.0, "covered"].mean()), rid)
