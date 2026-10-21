@@ -584,6 +584,54 @@ def ablation(run: Path | None, values: Values) -> str:
     return tabular("rlrr", ["\\#", "Configuration", "AUC", "Corr.\\ with true risk"], rows)
 
 
+def propagation(run: Path | None, values: Values) -> str:
+    """Growth-uncertainty propagation (configurations 8 and 9 with growth-twin posteriors)."""
+    names = [
+        "PropAthletes",
+        "PropEnsemble",
+        "PropDraws",
+        "PropCoverage",
+        "PropWidth",
+        "PropSD",
+        "PropRisk",
+        "PropAucWith",
+        "PropAucWithout",
+        "PropCorrWith",
+        "PropCorrWithout",
+        "PropDiff",
+        "PropDiffCI",
+    ]
+    if run is None:
+        values.pending(*names)
+        return ""
+    rid = run_id(run)
+    values.runs["ablation_propagation"] = rid
+    results = pd.read_csv(run / "results.csv")
+    wide = results.pivot_table(index="name", columns="metric", values="value")
+    record = _record(run)
+    with_, without = wide.loc["film_mech_uncertainty"], wide.loc["film_plus_mech_proxies"]
+    values.number("PropAthletes", int(record["person_period"]["n_athletes"]), rid)
+    values.number("PropEnsemble", int(record.get("ensemble_size", 0)), rid)
+    values.number("PropDraws", int(record.get("n_growth_draws", 0)), rid)
+    values.put("PropCoverage", percent(with_["interval_coverage_of_true_risk"]), rid)
+    values.number("PropWidth", with_["mean_risk_interval_width"], rid, 4)
+    values.number("PropSD", with_["mean_risk_sd_from_uncertainty"], rid, 4)
+    values.number("PropRisk", with_["mean_predicted_risk"], rid, 4)
+    values.number("PropAucWith", with_["auc"], rid)
+    values.number("PropAucWithout", without["auc"], rid)
+    values.number("PropCorrWith", with_["correlation_with_true_risk"], rid)
+    values.number("PropCorrWithout", without["correlation_with_true_risk"], rid)
+    differences = pd.read_csv(run / "differences.csv")
+    d = differences[differences["metric"] == PRIMARY]
+    if d.empty:
+        values.pending("PropDiff", "PropDiffCI")
+    else:
+        r = d.iloc[0]
+        values.number("PropDiff", r["difference"], rid, 3)
+        values.put("PropDiffCI", f"{_number(r['ci_low'], 3)} to {_number(r['ci_high'], 3)}", rid)
+    return ""
+
+
 def cohort_size(run: Path | None, values: Values) -> str:
     names = [
         "SizeEventsSmall",
@@ -730,6 +778,7 @@ TABLES: tuple[tuple[str, str, Builder], ...] = (
     ("evaluation", "ieee_tab_simrisk.tex", sim_risk),
     ("ablation", "ieee_tab_ablation.tex", ablation),
     ("sim_study_sizes", "ieee_tab_sizes.tex", cohort_size),
+    ("ablation_propagation", "", propagation),
 )
 
 

@@ -15,6 +15,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import torch
@@ -31,10 +32,12 @@ from youthtwin.utils.config import load_config, repo_root
 from youthtwin.utils.provenance import config_hash, run_metadata
 
 
-def _write_report(predictions: pd.DataFrame, target: Path, seed: int) -> None:
+def _write_report(
+    predictions: pd.DataFrame, target: Path, seed: int, grid: dict[str, Any] | None = None
+) -> None:
     tables = ablation_report(
         predictions,
-        load_config("eval/ablations.yaml"),
+        grid or load_config("eval/ablations.yaml"),
         load_config("eval/metrics.yaml"),
         seed=seed,
     )
@@ -56,6 +59,7 @@ def main(
     ensemble_size: int | None = None,
     max_epochs: int | None = None,
     pretrain_epochs: int | None = None,
+    only: str | None = None,
     seed: int = 0,
     threads: int = 4,
     out_dir: Path | None = None,
@@ -79,6 +83,14 @@ def main(
         configs["neural"]["ensemble_size"] = ensemble_size
     if max_epochs is not None:
         configs["neural"]["max_epochs"] = max_epochs
+    if only is not None:  # e.g. --only 8,9: a subset of the pre-registered grid
+        keep = {int(k) for k in only.split(",")}
+        grid = configs["ablations"]
+        grid["ablations"] = [a for a in grid["ablations"] if int(a["id"]) in keep]
+        names = {a["name"] for a in grid["ablations"]}
+        grid["comparisons"] = [
+            c for c in grid["comparisons"] if {c["model"], c["reference"]} <= names
+        ]
     if pretrain_epochs is not None:
         configs["neural"]["pretraining"]["epochs"] = pretrain_epochs
     run_config = {"cohort": cohort_config, **configs, "label": label, "folds": n_folds}
@@ -136,6 +148,9 @@ def main(
         "run_id": run_id,
         **metadata,
         "person_period": period.summary,
+        "ensemble_size": int(configs["neural"]["ensemble_size"]),
+        "n_growth_draws": int(configs["neural"]["uncertainty"]["n_growth_draws"]),
+        "ablation_ids": [int(a["id"]) for a in configs["ablations"]["ablations"]],
         "seconds": round(time.time() - started, 1),
     }
     (target / "run.json").write_text(json.dumps(record, indent=2), encoding="utf-8")
@@ -144,7 +159,7 @@ def main(
     typer.echo(wide.round(4).to_string())
     for note in sorted(set(results["note"]) - {""}):
         typer.echo(f"note: {note}")
-    _write_report(run.predictions, target, seed)
+    _write_report(run.predictions, target, seed, configs["ablations"])
 
 
 if __name__ == "__main__":

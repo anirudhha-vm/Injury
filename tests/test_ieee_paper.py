@@ -91,5 +91,5 @@ def test_manuscript_uses_only_defined_macros() -> None:
     """Every custom macro in main.tex is produced by the generator (or defined in the preamble)."""
     text = (repo_root() / "paper" / "ieee" / "main.tex").read_text(encoding="utf-8")
     values, _ = ieee.build({}, CONFIGS)
-    used = set(re.findall(r"\\((?:Berk|Run|Val|Sim|Abl|Size|Spec|Cited)[A-Za-z]*)", text))
+    used = set(re.findall(r"\\((?:Berk|Run|Val|Sim|Abl|Size|Spec|Cited|Prop)[A-Za-z]*)", text))
     assert used and used <= set(values.macros)
