@@ -867,3 +867,8 @@ output. Knee flexion at initial contact is not reported (the skeleton fixes it a
 tested, never evaluated next to the other models. Its predictors are chosen once from the whole
 cohort's size and event count (Riley criteria), so the choice cannot differ between folds.
 `make_figures.py` also copies the real-data and validity-study outputs into `paper/`.
+
+**D-123 · The results section is generated, not written.** `scripts/draft_results.py` renders
+`paper/results_draft.md` from the latest runs; every number is a `[[RUN:<id>|value]]` tag, so the
+results guard can trace it. Part 1 holds the real-data results, Part 2 the simulation study with
+SYNTHETIC in every heading. A missing run becomes a `[[RESULT: ...]]` placeholder.

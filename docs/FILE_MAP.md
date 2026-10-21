@@ -133,6 +133,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `recommend/rules.py` | Decision-support prompts from model outputs; wording and citation checks; no elevated-risk prompt from maturity alone | ✅ |
 | `recommend/evidence_library.yaml` | Evidence statements and citations behind the prompts | ✅ (not verified against the papers) |
 | `paper/methods.py` | Renders the methods draft from the configuration files, every value tagged | ✅ |
+| `paper/results.py` | Renders the results draft from run tables; every number tagged with its run ID; real data and simulation study kept apart; missing runs become placeholders | ✅ |
 | `dashboard/bundle.py` | Builds and loads the dashboard data bundle: growth curves, out-of-fold risk with uncertainty, SHAP contributions, prompts, replay keypoints | ✅ |
 | `dashboard/figures.py` | The dashboard's plots, watermarked when synthetic | ✅ |
 
@@ -157,6 +158,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `sim_study_validation.py` | Synthetic validity study: calibrates the markerless error, simulates the planned 36-participant study, repeats it for precision; to `outputs/sim_study_validation/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines, the confirmatory model and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
 | `make_figures.py` | Turns the latest runs (evaluation, ablation, growth study, real Berkeley growth, real runners' risk, synthetic validity study) into every figure and table under `paper/`, each with a provenance sidecar (`make paper-figs`) | ✅ |
+| `draft_results.py` | Writes `paper/results_draft.md` from the latest run of each kind (`make paper-results`) | ✅ |
 | `sample_size.py` | Prints and saves sample-size planning scenarios from `configs/eval/sample_size.yaml` | ✅ |
 | `check_cohort.py` | First command on real data: validates a cohort folder against the schema and writes anthropometry QC flags and TEM per measurer | ✅ |
 | `draft_methods.py` | Regenerates `paper/methods_draft.md` (`make methods`) | ✅ |
@@ -202,6 +204,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_berkeley.py` | Wrong recoding of the Berkeley data; windows longer than a season, incomplete or not reproducible; equations not matching; real data not reaching the growth model | ✅ |
 | `test_runners.py` | Unbounded ratios kept; label or time used as input; grouped folds sharing runners; temporal split overlapping; predictions not held out | ✅ |
 | `test_validation_sim.py` | Validation pairs not from the pipeline, not reproducible, or error not growing with offset or with smaller body size | ✅ |
+| `test_results_draft.py` | Untagged numbers in the generated results; synthetic sections not labelled; missing runs silently dropped | ✅ |
 | `cohort_settings.py` | Test helper: the realistic cohort config plus `sim/test_signal.yaml` | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
 | `test_shap_runs.py` | SHAP on an unfitted estimator (v2); non-additive explanations; wrong mapping back to inputs | ✅ |
