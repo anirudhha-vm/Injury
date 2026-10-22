@@ -35,10 +35,13 @@ from youthtwin.utils.provenance import config_hash, run_metadata
 def _write_report(
     predictions: pd.DataFrame, target: Path, seed: int, grid: dict[str, Any] | None = None
 ) -> None:
+    grid = grid or load_config("eval/ablations.yaml")
+    metrics_config = load_config("eval/metrics.yaml")
+    metrics_config["metrics"] = list(grid.get("report_metrics", metrics_config["metrics"]))
     tables = ablation_report(
         predictions,
-        grid or load_config("eval/ablations.yaml"),
-        load_config("eval/metrics.yaml"),
+        grid,
+        metrics_config,
         seed=seed,
     )
     for name, table in tables.items():

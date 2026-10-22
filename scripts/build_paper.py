@@ -92,6 +92,13 @@ def _validity_figure(run: Path, limit: float) -> plt.Figure:
 def main(tectonic: Path | None = None) -> None:
     kinds = [kind for kind, _, _ in ieee.TABLES]
     runs = {kind: _latest(kind) for kind in kinds}
+    # A full ablation fitted with growth-twin posteriors contains the propagation result itself
+    # (configuration 9 reports interval coverage); prefer it over the separate subset run.
+    main_ablation = runs.get("ablation")
+    if main_ablation is not None:
+        results = pd.read_csv(main_ablation / "results.csv")
+        if (results["metric"] == "interval_coverage_of_true_risk").any():
+            runs["ablation_propagation"] = main_ablation
     configs = {
         "sitar": load_config("growth/sitar.yaml"),
         "agreement": load_config("validation/agreement.yaml"),

@@ -927,3 +927,10 @@ draws, ensemble of three): they express sensitivity to growth timing, not risk-m
 in the 1,000-athlete risk cohort; single-network short-training ablation; propagation in the
 300-athlete cohort; two Berkeley window replicates. A stalled chain (one of four, two hours
 after the others) stopped the third Berkeley replicate.
+
+**D-129 · Overnight full-scale runs.** The user asked for everything trained and tested. The
+1,000-athlete cohort gets a growth-twin fit, then the tabular evaluation with twin features and
+the full nine-configuration ablation with posteriors (ensembles of three), which also yields the
+propagation result at full scale; `build_paper.py` then prefers it over the 300-athlete subset
+run. The ablation's interval tables omit the smoothed calibration index (`report_metrics`),
+whose bootstrap took eight hours. The reduced-compute PDF is kept as a fallback.

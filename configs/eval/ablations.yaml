@@ -19,3 +19,6 @@ comparisons:
   - {model: film_proposed, reference: late_fusion}
   - {model: film_plus_mech_proxies, reference: film_proposed}
   - {model: film_mech_uncertainty, reference: film_plus_mech_proxies}
+# Metrics for the ablation's interval tables (a subset of eval/metrics.yaml): the smoothed
+# calibration index is omitted because its bootstrap took hours on 47,000 athlete-weeks.
+report_metrics: [time_dependent_auc_4wk, brier_score, calibration_intercept, calibration_slope]
