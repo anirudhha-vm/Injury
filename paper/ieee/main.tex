@@ -297,10 +297,15 @@ R-hat \SimRhat{}, smallest bulk effective sample size \SimESS{}).
 \end{table}
 
 \subsection{Simulation study: conditioning ablation}
-Table~\ref{tab:ablation} lists the nine pre-registered configurations. The paired AUC
-difference of FiLM conditioning was \AblFilmVsConcat{} (\AblFilmVsConcatCI{}) against input
-concatenation, \AblFilmVsLate{} (\AblFilmVsLateCI{}) against late fusion and \AblFilmVsNone{}
-(\AblFilmVsNoneCI{}) against a movement encoder without growth state. In this cohort the uncertainty-propagating configuration has no growth-twin draws and
+Table~\ref{tab:ablation} lists the nine pre-registered configurations. The highest AUC was
+that of the \AblBestName{} configuration (\AblBestAuc{}), but the paired AUC differences of
+FiLM conditioning were \AblFilmVsConcat{} (\AblFilmVsConcatCI{}) against input concatenation,
+\AblFilmVsLate{} (\AblFilmVsLateCI{}) against late fusion and \AblFilmVsNone{}
+(\AblFilmVsNoneCI{}) against a movement encoder without growth state; in
+\AblDiffExcludingZero{} of \AblDiffCount{} informative comparisons did the interval exclude zero.
+The ordering of the conditioning methods is therefore not established at this cohort size.
+Mechanistic proxies were not available in the simulated athlete-week table, so the two
+configurations that add them are identical to FiLM here. In this cohort the uncertainty-propagating configuration has no growth-twin draws and
 reduces to its predecessor.
 
 \emph{Uncertainty propagation.} In the cohort of \PropAthletes{} athletes with growth-twin

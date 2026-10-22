@@ -234,7 +234,7 @@ def real_growth(run: Path | None, values: Values) -> str:
         )
     header = [
         "Group",
-        "$n$",
+        "Child-seasons",
         "Twin",
         "Moore",
         "Mirwald",
@@ -571,7 +571,10 @@ def ablation(run: Path | None, values: Values) -> str:
         "AblFilmVsLateCI",
         "AblFilmVsNone",
         "AblFilmVsNoneCI",
-        "AblCoverage",
+        "AblDiffCount",
+        "AblDiffExcludingZero",
+        "AblBestName",
+        "AblBestAuc",
     ]
     if run is None or not (run / "differences.csv").is_file():
         values.pending(*names)
@@ -601,12 +604,15 @@ def ablation(run: Path | None, values: Values) -> str:
         values.put(
             f"AblFilmVs{tag}CI", f"{_number(r['ci_low'], 3)} to {_number(r['ci_high'], 3)}", rid
         )
-    if "interval_coverage_of_true_risk" in wide.columns:
-        values.put(
-            "AblCoverage", percent(wide["interval_coverage_of_true_risk"].dropna().iloc[0]), rid
-        )
-    else:
-        values.pending("AblCoverage")
+    informative = differences[
+        (differences["metric"] == PRIMARY)
+        & ~((differences["ci_low"] == 0) & (differences["ci_high"] == 0))
+    ]
+    values.number("AblDiffCount", len(informative), rid)
+    values.number("AblDiffExcludingZero", int(informative["interval_excludes_zero"].sum()), rid)
+    best = wide.iloc[int(wide["auc"].to_numpy().argmax())]
+    values.put("AblBestName", str(best["name"]).replace("_", " "), rid)
+    values.number("AblBestAuc", best["auc"], rid, 3)
     rows = [
         [
             str(int(r["ablation_id"])),

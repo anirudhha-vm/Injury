@@ -204,7 +204,7 @@ def validity(run: Path, rid: str) -> list[str]:
             "Bias (deg)",
             "[[SPEC: 95%]] LoA (deg)",
             "RMSE (deg)",
-            "ICC(2,1)",
+            "ICC (two-way, absolute agreement)",
         ],
         rows,
     )

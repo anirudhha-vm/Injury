@@ -899,3 +899,31 @@ macro or table that `scripts/build_paper.py` writes from the latest runs into gi
 compiled with Tectonic, which needs no system LaTeX install. Superseded synthetic runs made
 before the realistic recalibration were moved to `outputs/archive/` so they cannot reach the
 paper. References were checked for this session; page ranges are marked for human verification.
+
+---
+
+## M10 outcome (2026-10-22)
+
+**R-012 · Real growth data: the twin is more accurate than the Moore equation in every band of
+distance from PHV, but its intervals are too narrow.** Coverage of nominal 90% intervals was well
+below nominal, worst more than three years before PHV, where one season says little about when
+the spurt will come. Mixing was incomplete for the girls' shared parameters. Consequence: the
+interval should be widened (prior spread growing with distance from PHV, or more seasons)
+before it is propagated into risk.
+
+**R-013 · Real injuries: leakage inflates AUC.** On the runners, row-level folds raised AUC over
+runner-grouped folds for all three models, each interval excluding zero; grouped calibration
+slopes were below one.
+
+**R-014 · At published incidence growth-related injury is weakly predictable even in principle.**
+In the calibrated simulation the true risk reaches only a modest AUC; learned models stayed near
+chance and uncalibrated up to 2,000 athlete-seasons, and no model ranking was established at
+1,000. This is the paper's sample-size message.
+
+**R-015 · Propagated risk intervals again cover far below nominal** (300-athlete cohort, 30 growth
+draws, ensemble of three): they express sensitivity to growth timing, not risk-model error.
+
+**D-128 · Compute reductions to finish in a day,** all stated in the manuscript: no twin features
+in the 1,000-athlete risk cohort; single-network short-training ablation; propagation in the
+300-athlete cohort; two Berkeley window replicates. A stalled chain (one of four, two hours
+after the others) stopped the third Berkeley replicate.
