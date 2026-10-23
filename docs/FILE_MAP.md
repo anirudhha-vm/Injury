@@ -228,6 +228,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M9 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
 | `docs/protocol/05_retrospective_growth_records.md` | What to collect for a second real growth dataset (existing school/academy records), permissions first | ✅ draft |
+| `docs/ethics/DRAFT_data_request_CIDAF.md` | Draft email requesting the Coimbra Soccer Longitudinal Project data (external validation on athletes) | ✅ draft |
 | `docs/plans/M11.md` | Path A plan: growth twin validated on real data (sequential updating, forecasts, coverage fix) | ✅ |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |

@@ -955,3 +955,13 @@ it would have at deployment. Saved posteriors without the slope load with slope 
 dataset cannot be created in a day; existing school or academy records can be compiled.
 `docs/protocol/05_retrospective_growth_records.md` and `data/schema/growth_records_template.csv`
 say what to collect, with permissions and ethics first.
+
+**R-016 · No second openly downloadable longitudinal growth dataset exists (searched 2026-10-23).**
+Candidates are available only on request: the Coimbra Soccer Longitudinal Project (58 youth
+soccer players, annual height and sitting height; CIDAF, signed agreement; draft request in
+`docs/ethics/DRAFT_data_request_CIDAF.md`), the Wroclaw Growth Study, Indian cohorts
+(Khadilkar 2019; a 2025 Cureus cohort) and the Kangwha cohort. The `sitar` package's `heights`
+data (Chard Growth Study: 12 girls, 6-monthly 8-16 y, age at menarche, no sitting height) is
+open and is used as a small external check. Strategy without a second large dataset: make the
+contribution methodological (sequential twin with forecasts, calibrated intervals, visits
+needed, robustness to schedule and measurement error, benchmark against SITAR and bsitar).

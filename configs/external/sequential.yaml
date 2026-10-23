@@ -1,0 +1,16 @@
+# Sequential growth-twin evaluation on real longitudinal data (M11, D-130). Run by
+# scripts/real_twin_sequential.py. Children are split into folds by child; the shared curve is
+# learned from training children's full records; each held-out child's twin is updated visit
+# by visit.
+n_folds: 5
+seed: 20261023
+train_age_range_years: [8.0, 18.0]   # full records used to learn the shared curve
+entry_age_range_years: [8.0, 15.0]   # held-out children enter at a random measurement age
+max_visits: 6                        # twin updated after each of up to six visits (three years)
+forecast_horizon_years: 0.5          # forecast the next six-monthly measurement
+interval_level: 0.90
+n_posterior_draws: 200
+model_overrides:                     # merged into configs/growth/sitar.yaml
+  timing_prior:
+    distance_slope: {enabled: true}
+  inference: {draws: 500, tune: 500}
