@@ -54,6 +54,7 @@ _ARRAY_FIELDS = (
     "sigma_beta",
     "cohort_mean",
     "cohort_sd",
+    "sigma_beta_slope",
 )
 
 _OPTIONAL_FIELDS = ("cohort_mean", "cohort_sd")
@@ -141,9 +142,13 @@ class SitarPosterior:
     mean_age: FloatArray  # (n,) each athlete's mean age at measurement (pivot for delta)
     sex: str
     synthetic: bool
+    # (S,) growth of the timing-prior SD per year of |Moore maturity offset| (zeros if off)
+    sigma_beta_slope: FloatArray | None = None
 
     def __post_init__(self) -> None:
         n_draws, n_athletes = self.alpha.shape
+        if self.sigma_beta_slope is None:
+            object.__setattr__(self, "sigma_beta_slope", np.zeros(n_draws))
         if len(self.athlete_ids) != n_athletes:
             raise ValueError("athlete_ids does not match the athlete dimension")
         if self.coefs.shape != (n_draws, splines.n_basis(self.knots)):
@@ -348,6 +353,8 @@ class SitarPosterior:
         # Files written before the cohort prior existed lack these; NaN means "not used".
         for name in _OPTIONAL_FIELDS:
             arrays.setdefault(name, np.full_like(arrays["sigma"], np.nan))
+        # Files written before the distance-dependent timing prior existed: slope zero.
+        arrays.setdefault("sigma_beta_slope", np.zeros_like(arrays["sigma"]))
         absent = [name for name in _ARRAY_FIELDS if name not in arrays]
         if absent:
             raise ValueError(f"{path.name}: saved posterior is missing {absent}")

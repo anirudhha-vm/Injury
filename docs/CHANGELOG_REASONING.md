@@ -934,3 +934,24 @@ the full nine-configuration ablation with posteriors (ensembles of three), which
 propagation result at full scale; `build_paper.py` then prefers it over the 300-athlete subset
 run. The ablation's interval tables omit the smoothed calibration index (`report_metrics`),
 whose bootstrap took eight hours. The reduced-compute PDF is kept as a fallback.
+
+---
+
+## M11 — Path A (2026-10-23)
+
+**D-130 · The paper becomes a methods paper on real data (Path A).** The user agreed that the
+simulated injury layers cannot carry a Q1 paper and that "digital twin" was not yet earned.
+Plan in `docs/plans/M11.md`: reference-cohort training, sequential twin updating with
+six-month forecasts on held-out children, and a distance-dependent timing prior.
+
+**D-131 · Distance-dependent timing prior.** Prior SD `sigma_beta * (1 + kappa * |Moore offset|)`,
+`kappa` learned (half-normal, off by default). Reason: on real data the twin's intervals
+undercovered most far from PHV, where Moore's error is known to be largest. With `kappa = 0`
+the likelihood is unchanged (test). `growth_data_from_measurements` can take the prior from
+other visits than the fitted ones, so a reference child fitted on the full record gets the prior
+it would have at deployment. Saved posteriors without the slope load with slope zero.
+
+**D-132 · Second real dataset: collection guidance.** The user has one day. A longitudinal
+dataset cannot be created in a day; existing school or academy records can be compiled.
+`docs/protocol/05_retrospective_growth_records.md` and `data/schema/growth_records_template.csv`
+say what to collect, with permissions and ethics first.

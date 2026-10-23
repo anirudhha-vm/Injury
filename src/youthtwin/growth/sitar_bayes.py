@@ -80,6 +80,15 @@ class GrowthData:
     prior_aphv: FloatArray  # per athlete, Moore-2015 predicted age at PHV
     sex: Sex
     synthetic: bool
+    # per athlete, |Moore maturity offset| at the visit the prior came from (years); widens the
+    # timing prior when the distance-dependent prior is on. None means zeros.
+    prior_distance: FloatArray | None = None
+
+    @property
+    def distance(self) -> FloatArray:
+        if self.prior_distance is None:
+            return np.zeros(self.n_athletes)
+        return np.asarray(self.prior_distance, dtype=np.float64)
 
     @property
     def n_athletes(self) -> int:
@@ -139,34 +148,50 @@ def prepare_growth_data(
     return growth_data_from_measurements(frame, sex, synthetic=bool(next(iter(flags))))
 
 
-def growth_data_from_measurements(frame: pd.DataFrame, sex: Sex, *, synthetic: bool) -> GrowthData:
+def growth_data_from_measurements(
+    frame: pd.DataFrame,
+    sex: Sex,
+    *,
+    synthetic: bool,
+    prior_frame: pd.DataFrame | None = None,
+) -> GrowthData:
     """Model-ready data from one sex's measurements, whatever their source.
 
     ``frame`` has columns ``athlete_id, age, stature, sitting_height``. Each athlete's prior
     centre is the Moore APHV from the visit at which the athlete is estimated to be closest to
-    PHV, because the equation's error grows with distance from PHV.
+    PHV, because the equation's error grows with distance from PHV. ``prior_frame`` (same
+    columns) supplies the visits the prior is computed from, if they differ from the visits the
+    curve is fitted to: a reference cohort fitted on full records but given priors from one
+    season, as at deployment.
     """
     frame = frame.sort_values(["athlete_id", "age"]).reset_index(drop=True)
+    source = frame if prior_frame is None else prior_frame.sort_values(["athlete_id", "age"])
+    source = source.reset_index(drop=True)
     estimate = moore2015(
         sex,
-        frame["age"].to_numpy(),
-        frame["stature"].to_numpy(),
-        frame["sitting_height"].to_numpy(),
+        source["age"].to_numpy(),
+        source["stature"].to_numpy(),
+        source["sitting_height"].to_numpy(),
     )
-    frame["moore_aphv"] = estimate.aphv
-    frame["moore_distance"] = np.abs(estimate.mo)
-    closest = frame.loc[frame.groupby("athlete_id")["moore_distance"].idxmin()]
-    prior = closest.set_index("athlete_id")["moore_aphv"]
-    athlete_ids = tuple(str(a) for a in prior.index)
+    source = source.assign(moore_aphv=estimate.aphv, moore_distance=np.abs(estimate.mo))
+    closest = source.loc[source.groupby("athlete_id")["moore_distance"].idxmin()]
+    prior = closest.set_index("athlete_id")
+    athlete_ids = tuple(str(a) for a in sorted(frame["athlete_id"].astype(str).unique()))
+    missing = set(athlete_ids) - set(prior.index.astype(str))
+    if missing:
+        raise ValueError(f"No prior visits for athletes: {sorted(missing)[:5]}")
+    prior.index = prior.index.astype(str)
+    prior = prior.loc[list(athlete_ids)]
     codes = {athlete: k for k, athlete in enumerate(athlete_ids)}
     return GrowthData(
         athlete_ids=athlete_ids,
         athlete_index=np.asarray(frame["athlete_id"].astype(str).map(codes), dtype=np.int64),
         age=frame["age"].to_numpy(dtype=np.float64),
         stature=frame["stature"].to_numpy(dtype=np.float64),
-        prior_aphv=prior.to_numpy(dtype=np.float64),
+        prior_aphv=prior["moore_aphv"].to_numpy(dtype=np.float64),
         sex=sex,
         synthetic=synthetic,
+        prior_distance=prior["moore_distance"].to_numpy(dtype=np.float64),
     )
 
 
@@ -230,6 +255,7 @@ def _grid_log_weights(
     timing_offset: Any,
     cohort_mean: Any = None,
     cohort_sd: Any = None,
+    prior_scale: Any = None,
 ) -> tuple[Any, Any, Any]:
     """Log posterior weight of every (timing, intensity) grid cell for every athlete.
 
@@ -241,7 +267,8 @@ def _grid_log_weights(
     Because ages are centred on each athlete's mean, the two effects are orthogonal and the
     marginal covariance ``var I + var_alpha 11' + var_delta cc'`` factorises term by term.
     """
-    beta = prior_aphv[:, None] + timing_offset + sigma_beta * grids.timing[None, :]  # (n, B)
+    scale = 1.0 if prior_scale is None else prior_scale[:, None]  # distance-dependent prior SD
+    beta = prior_aphv[:, None] + timing_offset + sigma_beta * scale * grids.timing[None, :]
     stretch = xp.exp(sigma_gamma * grids.intensity)  # (G,)
     z = (age[:, :, None, None] - beta[:, None, :, None]) * stretch[None, None, None, :]
     fitted = intercept + splines.spline_value(z, linear, coefs, knots, xp=xp)
@@ -317,6 +344,11 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             if timing["learn_sd"]
             else float(timing["sd_years"])
         )
+        slope = timing.get("distance_slope", {"enabled": False})
+        prior_scale: Any = None
+        if slope["enabled"]:
+            sigma_beta_slope = pm.HalfNormal("sigma_beta_slope", sigma=slope["sd_prior"])
+            prior_scale = 1.0 + sigma_beta_slope * data.distance
         cohort = timing["cohort_prior"]
         cohort_mean: Any = None
         cohort_sd: Any = None
@@ -345,6 +377,7 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             timing_offset=timing_offset,
             cohort_mean=cohort_mean,
             cohort_sd=cohort_sd,
+            prior_scale=prior_scale,
         )
         flat = log_weight.reshape((data.n_athletes, -1))
         pm.Potential("marginal_likelihood", pt.logsumexp(flat, axis=1).sum())
@@ -418,10 +451,17 @@ class SharedDraws:
     sigma_beta: FloatArray
     cohort_mean: FloatArray  # NaN when the cohort prior is disabled
     cohort_sd: FloatArray  # NaN when the cohort prior is disabled
+    sigma_beta_slope: FloatArray | None = None  # zeros when the prior SD does not grow
 
     @property
     def n_draws(self) -> int:
         return int(self.sigma.size)
+
+    @property
+    def slope(self) -> FloatArray:
+        if self.sigma_beta_slope is None:
+            return np.zeros(self.n_draws)
+        return np.asarray(self.sigma_beta_slope, dtype=np.float64)
 
 
 def shared_draws(
@@ -456,6 +496,7 @@ def shared_draws(
         sigma_beta=optional("sigma_beta", float(config["timing_prior"]["sd_years"])),
         cohort_mean=optional("cohort_mean", float("nan")),
         cohort_sd=optional("cohort_sd", float("nan")),
+        sigma_beta_slope=optional("sigma_beta_slope", 0.0),
     )
 
 
@@ -480,8 +521,10 @@ def draw_athlete_effects(
     alpha, beta, gamma, delta = (np.empty((shared.n_draws, n)) for _ in range(4))
     use_cohort = bool(np.isfinite(shared.cohort_sd).all())
     rows = np.arange(n)
+    slopes, distance = shared.slope, data.distance
     for s in range(shared.n_draws):
         sigma_beta = shared.sigma_beta[s]
+        prior_scale = 1.0 + slopes[s] * distance
         log_weight, residual_sum, slope_sum = _grid_log_weights(
             np,
             age=age,
@@ -502,6 +545,7 @@ def draw_athlete_effects(
             timing_offset=shared.timing_offset[s],
             cohort_mean=shared.cohort_mean[s] if use_cohort else None,
             cohort_sd=shared.cohort_sd[s] if use_cohort else None,
+            prior_scale=prior_scale,
         )
         flat = log_weight.reshape(n, -1)
         probability = np.exp(flat - flat.max(axis=1, keepdims=True))
@@ -511,7 +555,7 @@ def draw_athlete_effects(
         timing_cell, intensity_cell = np.divmod(cell, n_intensity)
         jitter = rng.uniform(-0.5, 0.5, n) * grids.timing_step
         centre = data.prior_aphv + shared.timing_offset[s]
-        beta[s] = centre + sigma_beta * (grids.timing[timing_cell] + jitter)
+        beta[s] = centre + sigma_beta * prior_scale * (grids.timing[timing_cell] + jitter)
         gamma[s] = shared.sigma_gamma[s] * grids.intensity[intensity_cell]
         var, var_alpha = shared.sigma[s] ** 2, shared.sigma_alpha[s] ** 2
         picked = (rows, timing_cell, intensity_cell)
@@ -548,6 +592,7 @@ def draw_athlete_effects(
         mean_age=mean_age,
         sex=data.sex,
         synthetic=data.synthetic,
+        sigma_beta_slope=shared.slope,
     )
 
 
@@ -586,6 +631,7 @@ def update(
         sigma_beta=previous.sigma_beta,
         cohort_mean=previous.cohort_mean,
         cohort_sd=previous.cohort_sd,
+        sigma_beta_slope=previous.sigma_beta_slope,
     )
     return draw_athlete_effects(shared, data, config, seed=seed)
 
@@ -598,6 +644,7 @@ def diagnostics(idata: InferenceData) -> dict[str, float]:
         "sigma_alpha",
         "sigma_gamma",
         "sigma_delta",
+        "sigma_beta_slope",
         "timing_offset",
         "sigma_beta",
         "cohort_mean",

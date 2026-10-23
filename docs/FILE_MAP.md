@@ -227,6 +227,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/RESEARCH_STRATEGY.md` | Study-design and positioning decisions with their literature evidence: three-paper plan, sample-size-limited confirmatory model, novelty claims, equation cross-check, what remains for humans | ✅ |
 | `docs/plans/Mx.md`, `Mx_done.md` | Plan before, and completion note after, each milestone | ✅ M0–M9 |
 | `docs/protocol/01–04_*.md` | DRAFT SOPs: anthropometry, camera setup, screening tasks, injury surveillance | ✅ draft |
+| `docs/protocol/05_retrospective_growth_records.md` | What to collect for a second real growth dataset (existing school/academy records), permissions first | ✅ draft |
+| `docs/plans/M11.md` | Path A plan: growth twin validated on real data (sequential updating, forecasts, coverage fix) | ✅ |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
 | `paper/manuscript_outline.md` | Single-paper structure: which layer is real data and which is simulation; numbers only via `paper/results_draft.md` | ✅ |
@@ -240,4 +242,5 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `paper/figures/`, `paper/tables/` | Generated only by `scripts/make_figures.py`, each file with a provenance sidecar; git-ignored (regenerate, never edit) | ✅ |
 | `data/README.md`, `data/schema/README.md` | What lives where, privacy rules | ✅ |
 | `data/schema/schema.sql` | SQL DDL for the nine tables | ✅ |
+| `data/schema/growth_records_template.csv` | Column template for retrospective growth records (example rows are invented) | ✅ |
 | `apps/twin_dashboard/app.py` | Streamlit research dashboard over a bundle directory; local only | ✅ |

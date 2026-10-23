@@ -12,6 +12,9 @@ timing_prior:
   learn_sd: true             # estimate how imprecise the Moore prior is in this cohort
   learn_offset: true         # estimate a cohort-level bias of the Moore prior
   offset_sd_years: 0.5       # ASSUMPTION
+  distance_slope:            # prior SD = sd * (1 + slope * |Moore maturity offset|), slope learned
+    enabled: false           # on for the real-data twin (configs/external/sequential.yaml); D-130
+    sd_prior: 0.5            # half-normal scale of the slope, per year of offset. ASSUMPTION
   cohort_prior:              # beta_i ~ Normal(cohort_mean, cohort_sd), both learned per sex
     enabled: false           # tested against a saved fit: no improvement in coverage (D-067)
     mean_sd_years: 1.0       # prior SD of the cohort mean around the mean Moore estimate. ASSUMPTION

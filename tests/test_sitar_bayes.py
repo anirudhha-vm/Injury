@@ -456,3 +456,69 @@ def test_shared_draws_from_inference_data() -> None:
     everything = sitar_bayes.shared_draws(idata, 500, 1, settings)
     assert everything.n_draws == 60
     assert isinstance(pd.Series(everything.sigma).mean(), float)
+
+
+# ------------------------------------------------------------------- distance-dependent prior
+
+
+def test_unit_prior_scale_leaves_the_likelihood_unchanged(config: dict[str, Any]) -> None:
+    data, _ = _simulate(6, seed=21)
+    plain = _weights(data, config)[0]
+    scaled = _weights(data, config, prior_scale=np.ones(data.n_athletes))[0]
+    np.testing.assert_allclose(scaled, plain)
+    # Doubling an athlete's prior scale is the same as doubling sigma_beta for that athlete.
+    doubled = _weights(data, config, prior_scale=np.full(data.n_athletes, 2.0))[0]
+    np.testing.assert_allclose(doubled, _weights(data, config, sigma_beta=2.0)[0])
+
+
+def test_slope_widens_timing_only_for_athletes_far_from_phv(config: dict[str, Any]) -> None:
+    """With little data, a positive slope widens the timing posterior of distant athletes."""
+    data, _ = _simulate(2, seed=22, visits=2)
+    data = GrowthData(**{**data.__dict__, "prior_distance": np.array([0.0, 3.0])})
+    weak = _shared(300, sigma=20.0)  # nearly uninformative data: the prior dominates
+    flat = sitar_bayes.draw_athlete_effects(weak, data, config, seed=1)
+    shared = SharedDraws(**{**weak.__dict__, "sigma_beta_slope": np.full(300, 0.5)})
+    wide = sitar_bayes.draw_athlete_effects(shared, data, config, seed=1)
+    spread_flat, spread_wide = flat.beta.std(axis=0), wide.beta.std(axis=0)
+    assert spread_wide[0] == pytest.approx(spread_flat[0], rel=0.15)  # distance 0: unchanged
+    assert spread_wide[1] > 1.5 * spread_flat[1]  # distance 3 y: prior SD x 2.5
+    np.testing.assert_allclose(wide.sigma_beta_slope, 0.5)
+    # The update path carries the slope through.
+    again = sitar_bayes.update(wide, data, config, seed=1)
+    np.testing.assert_allclose(again.beta, wide.beta)
+
+
+def test_prior_can_come_from_other_visits() -> None:
+    """A reference child fitted on the full record can take its prior from one season."""
+    ages = np.arange(9.0, 17.01, 0.5)
+    frame = pd.DataFrame(
+        {
+            "athlete_id": "c1",
+            "age": ages,
+            "stature": 130.0 + 5.0 * (ages - 9.0),
+            "sitting_height": 0.52 * (130.0 + 5.0 * (ages - 9.0)),
+        }
+    )
+    season = frame[frame["age"].between(9.0, 10.0)]
+    full = sitar_bayes.growth_data_from_measurements(frame, "male", synthetic=True)
+    seasonal = sitar_bayes.growth_data_from_measurements(
+        frame, "male", synthetic=True, prior_frame=season
+    )
+    assert seasonal.n_observations == full.n_observations == ages.size
+    assert seasonal.prior_aphv[0] != pytest.approx(full.prior_aphv[0])
+    assert seasonal.distance[0] > full.distance[0]  # one early season is far from PHV
+    with pytest.raises(ValueError, match="No prior visits"):
+        sitar_bayes.growth_data_from_measurements(
+            frame, "male", synthetic=True, prior_frame=season.assign(athlete_id="other")
+        )
+
+
+def test_posteriors_saved_without_a_slope_still_load(tmp_path: Any, config: dict[str, Any]) -> None:
+    data, _ = _simulate(3, seed=23)
+    posterior = sitar_bayes.draw_athlete_effects(_shared(20), data, config, seed=0)
+    path = posterior.save(tmp_path / "post")
+    with np.load(path) as stored:
+        arrays = {k: stored[k] for k in stored.files if k != "sigma_beta_slope"}
+    np.savez_compressed(path, **arrays)
+    loaded = type(posterior).load(tmp_path / "post")
+    np.testing.assert_allclose(loaded.sigma_beta_slope, 0.0)
