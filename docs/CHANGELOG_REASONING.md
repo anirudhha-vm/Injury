@@ -1001,3 +1001,16 @@ evidence only.
 
 **D-136 · Short records get no spline reference** (fewer than five points), so they are excluded
 from scoring instead of crashing the reference fit.
+
+**R-020 · Primary twin, five folds, real Berkeley data (run `realtwin-3526ac89c1f1`).** The twin
+beats Moore and Mirwald overall and improves with every visit while the equation stays flat;
+against the same model given the whole record its bias is about zero, so its bias against the
+Preece-Baines reference is a difference between curve families (confirmed with full records:
+constant offset of about 0.17 y). Conformal calibration brings coverage to nominal; the
+growth-spurt probability out-discriminates the Moore offset. Exception: one to three years
+before PHV Moore is as good or better. The six-month forecast is only on a par with velocity
+extrapolation.
+
+**D-137 · The Path A manuscript** is `paper/ieee_twin/` (generator `paper/twin_paper.py`, build
+`scripts/build_twin_paper.py`); the injury-focused manuscript in `paper/ieee/` is kept as the
+earlier version. Run records now carry `settings` so the generator can tell runs apart.
