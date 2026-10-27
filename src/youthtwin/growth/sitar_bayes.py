@@ -327,6 +327,42 @@ def _grid_log_weights(
     return log_weight, total, slope_total
 
 
+def _leg_log_weights(
+    xp: Any,
+    *,
+    lag_points: FloatArray,
+    lag_log_weight: FloatArray,
+    sigma_lag: Any,
+    timing_offset: Any,
+    **arguments: Any,
+) -> Any:
+    """Leg-length log-likelihood per (athlete, timing, intensity) cell, with each athlete's own
+    leg-to-stature lag ``lambda_i ~ Normal(0, sigma_lag)`` integrated out on a small grid.
+
+    The leg curve has its own shared shape, so the average lag is already in it; ``lambda_i``
+    is how far this athlete's legs run ahead of or behind that average.
+    """
+    terms = []
+    for point, weight in zip(lag_points, lag_log_weight, strict=True):
+        log_likelihood, _, _ = _grid_log_weights(
+            xp, timing_offset=timing_offset + sigma_lag * point, include_prior=False, **arguments
+        )
+        terms.append(log_likelihood + weight)
+    stacked = xp.stack(terms, axis=0)
+    if xp is np:
+        top = stacked.max(axis=0)
+        return top + np.log(np.exp(stacked - top).sum(axis=0))
+    return pt.logsumexp(stacked, axis=0)
+
+
+def lag_grid(config: Mapping[str, Any]) -> tuple[FloatArray, FloatArray]:
+    """Standardised grid and normalised log weights for the per-athlete leg lag."""
+    spec = config["bivariate"].get("lag", {"points": 1, "half_width_sd": 0.0})
+    if int(spec["points"]) <= 1:
+        return np.zeros(1), np.zeros(1)
+    return _normal_grid(float(spec["half_width_sd"]), int(spec["points"]))
+
+
 # --------------------------------------------------------------------------- model
 
 
@@ -422,8 +458,17 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
                 if deviation["enabled"]
                 else 0.0
             )
-            leg_weight, _, _ = _grid_log_weights(
+            lag_points, lag_log_weight = lag_grid(config)
+            sigma_lag: Any = (
+                pm.HalfNormal("sigma_lag", sigma=config["bivariate"]["lag"]["sd_prior"])
+                if lag_points.size > 1
+                else 0.0
+            )
+            leg_weight = _leg_log_weights(
                 pt,
+                lag_points=lag_points,
+                lag_log_weight=lag_log_weight,
+                sigma_lag=sigma_lag,
                 age=age,
                 stature=data.padded_leg(),
                 mask=mask,
@@ -441,7 +486,6 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
                 sigma_delta=sigma_delta_leg,
                 timing_offset=timing_offset,
                 prior_scale=prior_scale,
-                include_prior=False,
             )
             log_weight = log_weight + leg_weight
         flat = log_weight.reshape((data.n_athletes, -1))
@@ -485,7 +529,25 @@ def fit(
 ) -> InferenceData:
     """Sample the shared parameters by NUTS (default) or approximate them by ADVI."""
     settings = config["inference"]
-    with build_model(data, config):
+    with build_model(data, config) as model:
+        if settings["method"] == "map":
+            # Reference curve at its posterior mode (SITAR itself fits by maximum likelihood);
+            # athlete effects stay exact given it. Stored as one chain of identical draws so
+            # the rest of the pipeline is unchanged.
+            mode = pm.find_MAP(
+                start={**model.initial_point(), **initial_values(data, config)},
+                progressbar=progressbar,
+                seed=seed,
+                maxeval=int(settings.get("map_max_evaluations", 5000)),
+            )
+            n_draws = int(settings["draws"])
+            names = [v.name for v in model.free_RVs] + [v.name for v in model.deterministics]
+            posterior = {
+                name: np.repeat(np.asarray(mode[name])[None, None, ...], n_draws, axis=1)
+                for name in names
+                if name in mode
+            }
+            return az.from_dict(posterior=posterior)
         if settings["method"] == "advi":
             approximation = pm.fit(
                 n=int(settings["advi_iterations"]),
@@ -522,6 +584,7 @@ class LegCurve:
     sigma: FloatArray
     sigma_alpha: FloatArray
     sigma_delta: FloatArray
+    sigma_lag: FloatArray | None = None  # SD of the per-athlete leg lag; None or zeros: no lag
 
 
 @dataclass(frozen=True)
@@ -593,6 +656,7 @@ def shared_draws(
             sigma=draws("sigma_leg"),
             sigma_alpha=draws("sigma_alpha_leg"),
             sigma_delta=optional("sigma_delta_leg", 0.0),
+            sigma_lag=optional("sigma_lag", 0.0),
         )
         if "theta_leg" in stacked
         else None,
@@ -649,8 +713,13 @@ def draw_athlete_effects(
             prior_scale=prior_scale,
         )
         if leg is not None:
-            leg_weight, _, _ = _grid_log_weights(
+            lag_sd = 0.0 if leg.sigma_lag is None else float(leg.sigma_lag[s])
+            points, weights = lag_grid(config) if lag_sd > 0 else (np.zeros(1), np.zeros(1))
+            leg_weight = _leg_log_weights(
                 np,
+                lag_points=points,
+                lag_log_weight=weights,
+                sigma_lag=lag_sd,
                 age=age,
                 stature=leg_padded,
                 mask=mask,
@@ -668,7 +737,6 @@ def draw_athlete_effects(
                 sigma_delta=leg.sigma_delta[s],
                 timing_offset=shared.timing_offset[s],
                 prior_scale=prior_scale,
-                include_prior=False,
             )
             log_weight = log_weight + leg_weight
         flat = log_weight.reshape(n, -1)
@@ -773,6 +841,7 @@ def diagnostics(idata: InferenceData) -> dict[str, float]:
         "sigma_leg",
         "sigma_alpha_leg",
         "sigma_delta_leg",
+        "sigma_lag",
         "timing_offset",
         "sigma_beta",
         "cohort_mean",

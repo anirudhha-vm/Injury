@@ -40,9 +40,13 @@ bivariate:                   # leg length shares each athlete's timing and tempo
     curve_sd_cm: 20.0
     size_sd_cm: 5.0
     residual_sd_cm: 1.0
+  lag:                       # per-athlete leg-to-stature lag, integrated on a grid (D-135)
+    points: 7                # 1 = no individual lag (legs share each athlete's timing exactly)
+    half_width_sd: 3.0
+    sd_prior: 0.5            # half-normal scale of the lag SD, years. ASSUMPTION
 outcomes: [stature]          # sitting_height and mass follow once stature is validated
 inference:
-  method: nuts               # nuts | advi (fallback for speed)
+  method: nuts               # nuts | map (reference curve at its mode; D-134) | advi
   draws: 750
   tune: 750
   chains: 4

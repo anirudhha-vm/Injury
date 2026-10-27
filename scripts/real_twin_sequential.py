@@ -77,14 +77,16 @@ def _fold(job: Job) -> tuple[pd.DataFrame, dict[str, Any]]:
     data = sequential.training_data(frame, train, sex, config, windows)  # type: ignore[arg-type]
     started = time.time()
     idata = sitar_bayes.fit(data, model_config, seed=seed)
-    info = {
+    info: dict[str, Any] = {
         "sex": sex,
         "fold": fold,
         "n_train": data.n_athletes,
         "n_train_obs": data.n_observations,
         "seconds": round(time.time() - started, 1),
-        **sitar_bayes.diagnostics(idata),
+        "method": model_config["inference"]["method"],
     }
+    if model_config["inference"]["method"] == "nuts":
+        info.update(sitar_bayes.diagnostics(idata))
     if "sigma_beta_slope" in idata.posterior:
         info["sigma_beta_slope_mean"] = float(idata.posterior["sigma_beta_slope"].mean())
     info["sigma_beta_mean"] = float(idata.posterior["sigma_beta"].mean())
@@ -123,6 +125,7 @@ def main(
     draws: int | None = None,
     workers: int = 4,
     leg: bool = True,
+    method: str | None = None,
     out_dir: Path | None = None,
 ) -> None:
     config = load_config("external/sequential.yaml")
@@ -133,6 +136,8 @@ def main(
     model_config = _model_config(config)
     if draws is not None:
         model_config["inference"]["draws"] = model_config["inference"]["tune"] = draws
+    if method is not None:  # map: reference curve at its mode; nuts: full posterior
+        model_config["inference"]["method"] = method
     window_config = load_config("external/berkeley.yaml")["window"]
     if not (repo_root() / DATA).is_file():
         raise typer.BadParameter("Berkeley data not found; run scripts/fetch_public_data.py first")

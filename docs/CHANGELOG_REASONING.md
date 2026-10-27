@@ -965,3 +965,24 @@ data (Chard Growth Study: 12 girls, 6-monthly 8-16 y, age at menarche, no sittin
 open and is used as a small external check. Strategy without a second large dataset: make the
 contribution methodological (sequential twin with forecasts, calibrated intervals, visits
 needed, robustness to schedule and measurement error, benchmark against SITAR and bsitar).
+
+**D-133 · Leg-trunk (bivariate) twin.** Leg length (stature minus sitting height) gets its own
+shared curve, size and velocity effects, and shares each athlete's timing and tempo with
+stature; on a grid its likelihood simply adds to each cell. Rationale: legs peak before the
+trunk, so one season of asynchronous growth carries timing information. Tested on data
+simulated from the model (timing interval narrower and error lower); off by default.
+
+**D-134 · MAP option for the reference curve.** Full NUTS on full records costs about 0.1 s per
+gradient and hours per fit (PyTensor without BLAS; Numba gave only 1.3x). `inference.method:
+map` fits the shared curve at its posterior mode (the SITAR method itself fits by maximum
+likelihood) and keeps athlete effects exact given it. A five-fold, two-sex evaluation takes
+minutes. One NUTS fold is to be reported as a check.
+
+**R-017 · On real children, leg length with shared timing made the twin worse** (first MAP
+comparison, five folds: error and bias up, raw coverage down, especially in girls), although it
+helped in simulation, where every child's legs lead stature by the same amount. In real children
+the lead varies.
+
+**D-135 · Per-athlete leg lag.** Each athlete's leg-to-stature lag `lambda_i ~ Normal(0,
+sigma_lag)` is integrated on a seven-point grid, `sigma_lag` learned. Zero lag SD reproduces
+shared timing exactly (test).

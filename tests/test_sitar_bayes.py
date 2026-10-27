@@ -603,3 +603,27 @@ def test_bivariate_model_builds_and_starts_at_finite_density(config: dict[str, A
     # Disabled: the stature-only model.
     plain = sitar_bayes.build_model(data, config)
     assert "theta_leg" not in plain.named_vars
+
+
+def test_individual_leg_lag_softens_the_leg_information(config: dict[str, Any]) -> None:
+    """Zero lag SD reproduces shared timing; a positive lag SD trusts the legs less."""
+    data, _ = _bivariate(30, visits=3, seed=33)
+    base = _with_leg(_shared(200, sigma=0.3))
+    assert base.leg is not None
+    zero = SharedDraws(
+        **{
+            **base.__dict__,
+            "leg": sitar_bayes.LegCurve(**{**base.leg.__dict__, "sigma_lag": np.zeros(200)}),
+        }
+    )
+    lagged = SharedDraws(
+        **{
+            **base.__dict__,
+            "leg": sitar_bayes.LegCurve(**{**base.leg.__dict__, "sigma_lag": np.full(200, 1.0)}),
+        }
+    )
+    shared_timing = sitar_bayes.draw_athlete_effects(base, data, config, seed=4)
+    no_lag = sitar_bayes.draw_athlete_effects(zero, data, config, seed=4)
+    with_lag = sitar_bayes.draw_athlete_effects(lagged, data, config, seed=4)
+    np.testing.assert_allclose(no_lag.beta, shared_timing.beta)
+    assert np.median(with_lag.beta.std(axis=0)) > np.median(no_lag.beta.std(axis=0))
