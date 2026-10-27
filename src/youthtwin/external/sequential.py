@@ -254,6 +254,38 @@ def conformalize(
     return out
 
 
+def full_information_aphv(
+    shared: SharedDraws,
+    frame: pd.DataFrame,
+    athletes: Sequence[str],
+    sex: Sex,
+    model_config: Mapping[str, Any],
+    config: Mapping[str, Any],
+    *,
+    seed: int,
+) -> dict[str, float]:
+    """Each athlete's twin APHV given the whole record (within the training age range).
+
+    A reference free of curve-family differences: how close a few visits get to what the same
+    model says with complete data.
+    """
+    low, high = (float(v) for v in config["train_age_range_years"])
+    rows = complete(frame)
+    rows = rows[rows["athlete_id"].isin(athletes) & rows["age"].between(low, high)]
+    if rows.empty:
+        return {}
+    sitting = _sitting_height_available(config)
+    data = sitar_bayes.growth_data_from_measurements(
+        rows,
+        sex,
+        synthetic=False,
+        with_leg=bool(config.get("use_leg")) and sitting,
+        stature_only_prior=not sitting,
+    )
+    twin = sitar_bayes.draw_athlete_effects(shared, data, model_config, seed=seed)
+    return dict(zip(twin.athlete_ids, twin.aphv().mean(axis=0).tolist(), strict=True))
+
+
 def summarise(scores: pd.DataFrame, by: Sequence[str]) -> pd.DataFrame:
     """Errors, coverage and widths, grouped by ``by`` (e.g. visits, sex, distance band)."""
 
@@ -287,6 +319,11 @@ def summarise(scores: pd.DataFrame, by: Sequence[str]) -> pd.DataFrame:
             twin_says = (circa["twin_p_circa"] >= 0.5).to_numpy()
             out["circa_twin_sensitivity"] = twin_says[positive].mean()
             out["circa_twin_specificity"] = (~twin_says[~positive]).mean()
+        if "full_info_aphv" in group:
+            full = group.dropna(subset=["full_info_aphv"])
+            out["twin_mae_vs_full"] = (full["twin_aphv"] - full["full_info_aphv"]).abs().mean()
+            out["moore_mae_vs_full"] = (full["moore_aphv"] - full["full_info_aphv"]).abs().mean()
+            out["twin_bias_vs_full"] = (full["twin_aphv"] - full["full_info_aphv"]).mean()
         if "twin_conf_covered" in scored:
             out["twin_conf_coverage"] = scored["twin_conf_covered"].astype(float).mean()
             out["twin_conf_width"] = (scored["twin_conf_high"] - scored["twin_conf_low"]).mean()

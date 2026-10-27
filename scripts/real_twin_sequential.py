@@ -95,6 +95,16 @@ def _fold(job: Job) -> tuple[pd.DataFrame, dict[str, Any]]:
     scores = sequential.score_sequences(
         shared, sequences, truth, sex, model_config, config, seed=seed + 2
     )  # type: ignore[arg-type]
+    full = sequential.full_information_aphv(
+        shared,
+        frame,
+        held_out,
+        sex,
+        model_config,
+        config,
+        seed=seed + 3,  # type: ignore[arg-type]
+    )
+    scores["full_info_aphv"] = scores["athlete_id"].map(full)
     return scores.assign(fold=fold), info
 
 
@@ -130,6 +140,7 @@ def main(
     visit_step: int = 1,
     added_noise: float = 0.0,
     sitting_height: bool = True,
+    fold: int | None = None,
     out_dir: Path | None = None,
 ) -> None:
     config = load_config("external/sequential.yaml")
@@ -163,9 +174,10 @@ def main(
     target.mkdir(parents=True, exist_ok=True)
     started = time.time()
     jobs: list[Job] = [
-        (sex, fold, config, model_config, window_config)
-        for fold in range(int(config["n_folds"]))
+        (sex, k, config, model_config, window_config)
+        for k in range(int(config["n_folds"]))
         for sex in ("female", "male")
+        if fold is None or k == fold  # --fold: one fold only (e.g. the NUTS check)
     ]
     with ProcessPoolExecutor(max_workers=workers, mp_context=get_context("spawn")) as pool:
         results = list(pool.map(_fold, jobs))
