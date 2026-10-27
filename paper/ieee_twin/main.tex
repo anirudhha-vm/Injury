@@ -38,8 +38,8 @@ calibration on held-out athletes makes the intervals cover at their nominal leve
 validation by child on the real Berkeley Child Guidance Study (\TwChildren{} children,
 \TwEvaluations{} visit-by-visit evaluations), the twin's error in age at PHV was \TwMAE{}~years
 against \TwMooreMAE{} for the Moore equation and \TwMirwaldMAE{} for Mirwald, and fell from
-\TwMAEFirst{} after one visit to \TwMAELast{} after \TwMaxVisits{}, while the equation did not
-improve. Calibrated intervals covered \TwCovConf{} of cases at nominal \SpecInterval{}, and the
+\TwMAEFirst{} after one visit to \TwMAELast{} after \TwMaxVisits{}, while the equation's improved
+only from \TwMooreFirst{} to \TwMooreLast{}. Calibrated intervals covered \TwCovConf{} of cases at nominal \SpecInterval{}, and the
 growth-spurt probability discriminated with an AUC of \TwCircaAUC{} against \TwCircaAUCMoore{} for
 the equation. In an external cohort of \ChGirls{} girls, the twin's estimate correlated
 \ChCorrTwin{} with age at menarche against \ChCorrMoore{} for the equation.
@@ -137,9 +137,9 @@ individual leg-to-stature lag, was evaluated in the same way.
 \subsection{Accuracy as visits accumulate}
 Over \TwEvaluations{} evaluations the twin's mean absolute error in age at PHV was \TwMAE{}~years
 against \TwMooreMAE{} for Moore and \TwMirwaldMAE{} for Mirwald (Table~\ref{tab:visits},
-Fig.~\ref{fig:sequential}). It fell from \TwMAEFirst{} after the first visit to \TwMAELast{} after
-\TwMaxVisits{}; the equation, which does not learn from repeated visits, stayed between
-\TwMooreFirst{} and \TwMooreLast{}. Against the twin's own full-record estimate the errors were
+Fig.~\ref{fig:sequential}). It fell from \TwMAEFirst{} after the first visit, when it matched the equation, to
+\TwMAELast{} after \TwMaxVisits{}; the equation, which can only choose which single measurement to
+use, improved from \TwMooreFirst{} to \TwMooreLast{}. Against the twin's own full-record estimate the errors were
 \TwMAEFull{} and \TwMooreMAEFull{}~years, and the twin's bias fell from \TwBiasPB{} (against
 Preece--Baines) to \TwBiasFull{}~years, showing that the bias against the Preece--Baines reference
 is a difference between curve families. The twin was more accurate than Moore in \TwBandsBetter{}
@@ -192,7 +192,8 @@ intervals covered \TwForecastCovConf{} of measurements (raw \TwForecastCovRaw{})
 \subsection{Robustness and model variants}
 Table~\ref{tab:variants} shows the twin under the measurement conditions of real programmes and
 with the leg-length extension. With yearly visits the error was \TwYearlyMAE{}~years (Moore
-\TwYearlyMoore{}); with one centimetre of added measurement error \TwNoiseMAE{} (Moore
+\TwYearlyMoore{}), lower than with six-monthly visits because the same number of yearly visits
+spans twice as much growth; with one centimetre of added measurement error \TwNoiseMAE{} (Moore
 \TwNoiseMoore{}); without sitting height \TwNosittingMAE{} (Moore stature-only \TwNosittingMoore{}).
 Calibrated coverage stayed at \TwYearlyCov{}, \TwNoiseCov{} and \TwNosittingCov{}. Adding leg length
 did not help: \TwLegSharedMAE{}~years with shared timing and \TwLegLagMAE{} with an individual lag,
