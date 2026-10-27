@@ -60,7 +60,7 @@ from numpy.typing import NDArray
 
 from youthtwin.growth import splines
 from youthtwin.growth.growth_state import SitarPosterior, age_on
-from youthtwin.growth.maturity_equations import Sex, moore2015
+from youthtwin.growth.maturity_equations import Sex, moore2015, moore2015_boys_stature
 
 FloatArray = NDArray[np.float64]
 IntArray = NDArray[np.int64]
@@ -172,6 +172,7 @@ def growth_data_from_measurements(
     synthetic: bool,
     prior_frame: pd.DataFrame | None = None,
     with_leg: bool = False,
+    stature_only_prior: bool = False,
 ) -> GrowthData:
     """Model-ready data from one sex's measurements, whatever their source.
 
@@ -185,12 +186,15 @@ def growth_data_from_measurements(
     frame = frame.sort_values(["athlete_id", "age"]).reset_index(drop=True)
     source = frame if prior_frame is None else prior_frame.sort_values(["athlete_id", "age"])
     source = source.reset_index(drop=True)
-    estimate = moore2015(
-        sex,
-        source["age"].to_numpy(),
-        source["stature"].to_numpy(),
-        source["sitting_height"].to_numpy(),
-    )
+    if stature_only_prior and sex == "male":  # no sitting height: Moore's stature-only variant
+        estimate = moore2015_boys_stature(source["age"].to_numpy(), source["stature"].to_numpy())
+    else:
+        estimate = moore2015(
+            sex,
+            source["age"].to_numpy(),
+            source["stature"].to_numpy(),
+            None if stature_only_prior else source["sitting_height"].to_numpy(),
+        )
     source = source.assign(moore_aphv=estimate.aphv, moore_distance=np.abs(estimate.mo))
     closest = source.loc[source.groupby("athlete_id")["moore_distance"].idxmin()]
     prior = closest.set_index("athlete_id")

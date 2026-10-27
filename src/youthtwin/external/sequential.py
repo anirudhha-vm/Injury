@@ -25,7 +25,7 @@ import pandas as pd
 
 from youthtwin.eval import metrics
 from youthtwin.growth import sitar_bayes
-from youthtwin.growth.maturity_equations import Sex, mirwald2002, moore2015
+from youthtwin.growth.maturity_equations import Sex, mirwald2002, moore2015, moore2015_boys_stature
 from youthtwin.growth.sitar_bayes import SharedDraws
 
 MEASURES = ["stature", "sitting_height", "mass"]
@@ -71,6 +71,10 @@ def entry_sequences(
     rng = np.random.default_rng(seed)
     low, high = (float(v) for v in config["entry_age_range_years"])
     keep = int(config["max_visits"]) + 1
+    scenario = config.get("scenario", {})
+    step = int(scenario.get("visit_step", 1))  # 2 = yearly instead of six-monthly visits
+    noise = float(scenario.get("added_noise_cm", 0.0))
+    noise_rng = np.random.default_rng([seed, 1])  # separate stream: entry ages stay identical
     out: dict[str, pd.DataFrame] = {}
     rows = complete(frame)
     for athlete in sorted(athletes):
@@ -79,26 +83,39 @@ def entry_sequences(
         if starts.size == 0:
             continue
         entry = float(rng.choice(starts))
-        visits = record[record["age"] >= entry - 1e-9].head(keep)
+        visits = record[record["age"] >= entry - 1e-9].iloc[::step].head(keep).copy()
+        if noise > 0:  # extra measurement error, as with a wall chart and no stadiometer
+            for column in ("stature", "sitting_height"):
+                visits[column] = visits[column] + noise_rng.normal(0.0, noise, len(visits))
         if len(visits) >= 2:
             out[str(athlete)] = visits.reset_index(drop=True)
     return out
 
 
-def _moore_offset(visits: pd.DataFrame, sex: Sex) -> float:
+def _sitting_height_available(config: Mapping[str, Any]) -> bool:
+    return bool(config.get("scenario", {}).get("sitting_height", True))
+
+
+def _moore(visits: pd.DataFrame, sex: Sex, sitting: bool) -> Any:
+    if not sitting and sex == "male":
+        return moore2015_boys_stature(visits["age"], visits["stature"])
+    return moore2015(
+        sex, visits["age"], visits["stature"], visits["sitting_height"] if sitting else None
+    )
+
+
+def _moore_offset(visits: pd.DataFrame, sex: Sex, sitting: bool = True) -> float:
     """Moore maturity offset at the latest visit (what a practitioner would use today)."""
-    last = visits.iloc[[-1]]
-    estimate = moore2015(sex, last["age"], last["stature"], last["sitting_height"])
-    return float(estimate.mo[0])
+    return float(_moore(visits.iloc[[-1]], sex, sitting).mo[0])
 
 
-def _equation_aphv(visits: pd.DataFrame, sex: Sex) -> tuple[float, float]:
-    """Moore and (boys) Mirwald APHV at the visit each places closest to PHV."""
-    args = (visits["age"], visits["stature"], visits["sitting_height"])
-    moore = moore2015(sex, *args)
+def _equation_aphv(visits: pd.DataFrame, sex: Sex, sitting: bool = True) -> tuple[float, float]:
+    """Moore and (boys with sitting height) Mirwald APHV at the visit closest to PHV."""
+    moore = _moore(visits, sex, sitting)
     moore_aphv = float(moore.aphv[np.argmin(np.abs(moore.mo))])
-    if sex != "male":
+    if sex != "male" or not sitting:
         return moore_aphv, float("nan")
+    args = (visits["age"], visits["stature"], visits["sitting_height"])
     mirwald = mirwald2002(sex, *args, visits["mass"], synthetic=False)
     return moore_aphv, float(mirwald.aphv[np.argmin(np.abs(mirwald.mo))])
 
@@ -123,8 +140,13 @@ def score_sequences(
         if not seen:
             break
         frame = pd.concat([v.assign(athlete_id=a) for a, v in seen.items()], ignore_index=True)
+        sitting = _sitting_height_available(config)
         data = sitar_bayes.growth_data_from_measurements(
-            frame, sex, synthetic=False, with_leg=bool(config.get("use_leg"))
+            frame,
+            sex,
+            synthetic=False,
+            with_leg=bool(config.get("use_leg")) and sitting,
+            stature_only_prior=not sitting,
         )
         twin = sitar_bayes.draw_athlete_effects(shared, data, model_config, seed=seed + k)
         aphv = twin.aphv()
@@ -132,7 +154,7 @@ def score_sequences(
             visits = seen[athlete]
             draws = aphv[:, j]
             low, high = np.quantile(draws, [tail, 1.0 - tail])
-            moore, mirwald = _equation_aphv(visits, sex)
+            moore, mirwald = _equation_aphv(visits, sex, sitting)
             truth = float(reference.get(athlete, np.nan))
             last = visits.iloc[-1]
             half_width = float(config["circa_phv_half_width_years"])
@@ -153,7 +175,7 @@ def score_sequences(
                 "mirwald_aphv": mirwald,
                 # Decision output: probability the child is in the growth spurt now.
                 "twin_p_circa": float(np.mean(np.abs(offset_draws) <= half_width)),
-                "moore_offset_now": _moore_offset(visits, sex),
+                "moore_offset_now": _moore_offset(visits, sex, sitting),
                 "circa_now": bool(abs(float(last["age"]) - truth) <= half_width)
                 if np.isfinite(truth)
                 else np.nan,

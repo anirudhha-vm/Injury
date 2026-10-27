@@ -180,3 +180,32 @@ def test_conformal_intervals_reach_their_level_and_never_self_calibrate() -> Non
     np.testing.assert_allclose(
         again.loc[fold0, "twin_conf_factor"], out.loc[fold0, "twin_conf_factor"]
     )
+
+
+def test_robustness_scenarios_degrade_only_the_held_out_data(frame: pd.DataFrame) -> None:
+    test = [f"b{k:02d}" for k in range(16, 24)]
+    base = sequential.entry_sequences(frame, test, CONFIG, seed=4)
+    yearly = sequential.entry_sequences(
+        frame, test, {**CONFIG, "scenario": {"visit_step": 2}}, seed=4
+    )
+    for athlete, visits in yearly.items():
+        assert np.allclose(np.diff(visits["age"]), 1.0)
+        assert visits["age"].iloc[0] == base[athlete]["age"].iloc[0]  # same entry age
+    noisy = sequential.entry_sequences(
+        frame, test, {**CONFIG, "scenario": {"added_noise_cm": 1.0}}, seed=4
+    )
+    differences = np.concatenate(
+        [(noisy[a]["stature"] - base[a]["stature"]).to_numpy() for a in base]
+    )
+    assert 0.6 < differences.std() < 1.4
+
+
+def test_without_sitting_height_the_prior_uses_stature_only() -> None:
+    ages = np.arange(11.0, 13.01, 0.5)
+    frame = pd.DataFrame(
+        {"athlete_id": "c", "age": ages, "stature": 140 + 6 * (ages - 11), "sitting_height": np.nan}
+    )
+    data = sitar_bayes.growth_data_from_measurements(
+        frame, "male", synthetic=False, stature_only_prior=True
+    )
+    assert np.isfinite(data.prior_aphv).all() and data.leg is None

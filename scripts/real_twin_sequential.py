@@ -127,11 +127,20 @@ def main(
     leg: bool = True,
     leg_lag: bool = True,
     method: str | None = None,
+    visit_step: int = 1,
+    added_noise: float = 0.0,
+    sitting_height: bool = True,
     out_dir: Path | None = None,
 ) -> None:
     config = load_config("external/sequential.yaml")
     config["use_leg"] = leg  # --no-leg: the stature-only twin, for comparison
     config["model_overrides"]["bivariate"]["enabled"] = leg
+    # Robustness scenarios change only the held-out children's data, not the reference cohort.
+    config["scenario"] = {
+        "visit_step": visit_step,
+        "added_noise_cm": added_noise,
+        "sitting_height": sitting_height,
+    }
     if not leg_lag:  # legs share each athlete's timing exactly (no individual lag)
         config["model_overrides"]["bivariate"]["lag"] = {"points": 1}
     if n_folds is not None:
