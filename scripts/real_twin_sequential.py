@@ -122,9 +122,12 @@ def main(
     n_folds: int | None = None,
     draws: int | None = None,
     workers: int = 4,
+    leg: bool = True,
     out_dir: Path | None = None,
 ) -> None:
     config = load_config("external/sequential.yaml")
+    config["use_leg"] = leg  # --no-leg: the stature-only twin, for comparison
+    config["model_overrides"]["bivariate"]["enabled"] = leg
     if n_folds is not None:
         config["n_folds"] = n_folds
     model_config = _model_config(config)

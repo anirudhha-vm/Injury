@@ -83,6 +83,8 @@ class GrowthData:
     # per athlete, |Moore maturity offset| at the visit the prior came from (years); widens the
     # timing prior when the distance-dependent prior is on. None means zeros.
     prior_distance: FloatArray | None = None
+    # per observation, leg length = stature - sitting height (cm); None for a stature-only twin
+    leg: FloatArray | None = None
 
     @property
     def distance(self) -> FloatArray:
@@ -122,6 +124,21 @@ class GrowthData:
         mask[rows, column] = 1.0
         return age, stature, mask
 
+    def padded_leg(self) -> FloatArray:
+        """Leg length laid out like ``padded()``'s stature."""
+        if self.leg is None:
+            raise ValueError("These data have no leg length")
+        swapped = GrowthData(
+            athlete_ids=self.athlete_ids,
+            athlete_index=self.athlete_index,
+            age=self.age,
+            stature=np.asarray(self.leg, dtype=np.float64),
+            prior_aphv=self.prior_aphv,
+            sex=self.sex,
+            synthetic=self.synthetic,
+        )
+        return swapped.padded()[1]
+
 
 def prepare_growth_data(
     athletes: pd.DataFrame, anthropometrics: pd.DataFrame, sex: Sex
@@ -154,6 +171,7 @@ def growth_data_from_measurements(
     *,
     synthetic: bool,
     prior_frame: pd.DataFrame | None = None,
+    with_leg: bool = False,
 ) -> GrowthData:
     """Model-ready data from one sex's measurements, whatever their source.
 
@@ -192,6 +210,9 @@ def growth_data_from_measurements(
         sex=sex,
         synthetic=synthetic,
         prior_distance=prior["moore_distance"].to_numpy(dtype=np.float64),
+        leg=(frame["stature"] - frame["sitting_height"]).to_numpy(dtype=np.float64)
+        if with_leg
+        else None,
     )
 
 
@@ -256,6 +277,7 @@ def _grid_log_weights(
     cohort_mean: Any = None,
     cohort_sd: Any = None,
     prior_scale: Any = None,
+    include_prior: bool = True,
 ) -> tuple[Any, Any, Any]:
     """Log posterior weight of every (timing, intensity) grid cell for every athlete.
 
@@ -289,6 +311,8 @@ def _grid_log_weights(
         (n - 2.0) * xp.log(var) + xp.log(var + n * var_alpha) + xp.log(var + spread * var_delta)
     )
     log_likelihood = -0.5 * (quadratic + log_det + n * _LOG_2PI)
+    if not include_prior:  # a second outcome sharing timing: its likelihood only
+        return log_likelihood, total, slope_total
     log_weight = (
         log_likelihood
         + grids.timing_log_weight[None, :, None]
@@ -379,9 +403,55 @@ def build_model(data: GrowthData, config: Mapping[str, Any]) -> pm.Model:
             cohort_sd=cohort_sd,
             prior_scale=prior_scale,
         )
+        if leg_enabled(config, data):
+            assert data.leg is not None
+            leg_priors = config["bivariate"]["priors"]
+            theta_leg = pm.Normal(
+                "theta_leg", mu=0.0, sigma=leg_priors["curve_sd_cm"], dims="curve"
+            )
+            curve_leg = pt.dot(transform, theta_leg)
+            intercept_leg = pm.Deterministic(
+                "intercept_leg", float(np.mean(data.leg)) + curve_leg[0]
+            )
+            linear_leg = pm.Deterministic("linear_leg", curve_leg[1])
+            coefs_leg = pm.Deterministic("coefs_leg", curve_leg[2:], dims="basis")
+            sigma_leg = pm.HalfNormal("sigma_leg", sigma=leg_priors["residual_sd_cm"])
+            sigma_alpha_leg = pm.HalfNormal("sigma_alpha_leg", sigma=leg_priors["size_sd_cm"])
+            sigma_delta_leg: Any = (
+                pm.HalfNormal("sigma_delta_leg", sigma=deviation["sd_prior"])
+                if deviation["enabled"]
+                else 0.0
+            )
+            leg_weight, _, _ = _grid_log_weights(
+                pt,
+                age=age,
+                stature=data.padded_leg(),
+                mask=mask,
+                n_visits=data.n_per_athlete.astype(np.float64),
+                prior_aphv=data.prior_aphv,
+                grids=grids,
+                knots=knots,
+                intercept=intercept_leg,
+                linear=linear_leg,
+                coefs=coefs_leg,
+                sigma=sigma_leg,
+                sigma_alpha=sigma_alpha_leg,
+                sigma_beta=sigma_beta,
+                sigma_gamma=sigma_gamma,
+                sigma_delta=sigma_delta_leg,
+                timing_offset=timing_offset,
+                prior_scale=prior_scale,
+                include_prior=False,
+            )
+            log_weight = log_weight + leg_weight
         flat = log_weight.reshape((data.n_athletes, -1))
         pm.Potential("marginal_likelihood", pt.logsumexp(flat, axis=1).sum())
     return model
+
+
+def leg_enabled(config: Mapping[str, Any], data: GrowthData) -> bool:
+    """Whether the leg-length curve is part of the model for these data."""
+    return bool(config.get("bivariate", {}).get("enabled", False)) and data.leg is not None
 
 
 def initial_values(data: GrowthData, config: Mapping[str, Any]) -> dict[str, Any]:
@@ -397,7 +467,13 @@ def initial_values(data: GrowthData, config: Mapping[str, Any]) -> dict[str, Any
     theta, *_ = np.linalg.lstsq(
         design @ transform, data.stature - float(np.mean(data.stature)), rcond=None
     )
-    return {"theta": theta}
+    values: dict[str, Any] = {"theta": theta}
+    if leg_enabled(config, data):
+        assert data.leg is not None
+        values["theta_leg"], *_ = np.linalg.lstsq(
+            design @ transform, data.leg - float(np.mean(data.leg)), rcond=None
+        )
+    return values
 
 
 def fit(
@@ -437,6 +513,18 @@ def fit(
 
 
 @dataclass(frozen=True)
+class LegCurve:
+    """Posterior draws of the leg-length curve, which shares each athlete's timing (S draws)."""
+
+    intercept: FloatArray
+    linear: FloatArray
+    coefs: FloatArray  # (S, K - 2)
+    sigma: FloatArray
+    sigma_alpha: FloatArray
+    sigma_delta: FloatArray
+
+
+@dataclass(frozen=True)
 class SharedDraws:
     """Posterior draws of the shared parameters (S draws)."""
 
@@ -452,6 +540,7 @@ class SharedDraws:
     cohort_mean: FloatArray  # NaN when the cohort prior is disabled
     cohort_sd: FloatArray  # NaN when the cohort prior is disabled
     sigma_beta_slope: FloatArray | None = None  # zeros when the prior SD does not grow
+    leg: LegCurve | None = None  # the leg-length curve of a bivariate twin
 
     @property
     def n_draws(self) -> int:
@@ -497,6 +586,16 @@ def shared_draws(
         cohort_mean=optional("cohort_mean", float("nan")),
         cohort_sd=optional("cohort_sd", float("nan")),
         sigma_beta_slope=optional("sigma_beta_slope", 0.0),
+        leg=LegCurve(
+            intercept=draws("intercept_leg"),
+            linear=draws("linear_leg"),
+            coefs=draws("coefs_leg"),
+            sigma=draws("sigma_leg"),
+            sigma_alpha=draws("sigma_alpha_leg"),
+            sigma_delta=optional("sigma_delta_leg", 0.0),
+        )
+        if "theta_leg" in stacked
+        else None,
     )
 
 
@@ -522,6 +621,8 @@ def draw_athlete_effects(
     use_cohort = bool(np.isfinite(shared.cohort_sd).all())
     rows = np.arange(n)
     slopes, distance = shared.slope, data.distance
+    leg = shared.leg if (shared.leg is not None and data.leg is not None) else None
+    leg_padded = data.padded_leg() if leg is not None else None
     for s in range(shared.n_draws):
         sigma_beta = shared.sigma_beta[s]
         prior_scale = 1.0 + slopes[s] * distance
@@ -547,6 +648,29 @@ def draw_athlete_effects(
             cohort_sd=shared.cohort_sd[s] if use_cohort else None,
             prior_scale=prior_scale,
         )
+        if leg is not None:
+            leg_weight, _, _ = _grid_log_weights(
+                np,
+                age=age,
+                stature=leg_padded,
+                mask=mask,
+                n_visits=n_visits,
+                prior_aphv=data.prior_aphv,
+                grids=grids,
+                knots=knots,
+                intercept=leg.intercept[s],
+                linear=leg.linear[s],
+                coefs=leg.coefs[s],
+                sigma=leg.sigma[s],
+                sigma_alpha=leg.sigma_alpha[s],
+                sigma_beta=sigma_beta,
+                sigma_gamma=shared.sigma_gamma[s],
+                sigma_delta=leg.sigma_delta[s],
+                timing_offset=shared.timing_offset[s],
+                prior_scale=prior_scale,
+                include_prior=False,
+            )
+            log_weight = log_weight + leg_weight
         flat = log_weight.reshape(n, -1)
         probability = np.exp(flat - flat.max(axis=1, keepdims=True))
         cumulative = np.cumsum(probability, axis=1)
@@ -645,6 +769,10 @@ def diagnostics(idata: InferenceData) -> dict[str, float]:
         "sigma_gamma",
         "sigma_delta",
         "sigma_beta_slope",
+        "theta_leg",
+        "sigma_leg",
+        "sigma_alpha_leg",
+        "sigma_delta_leg",
         "timing_offset",
         "sigma_beta",
         "cohort_mean",

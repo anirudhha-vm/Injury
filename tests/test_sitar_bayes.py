@@ -522,3 +522,84 @@ def test_posteriors_saved_without_a_slope_still_load(tmp_path: Any, config: dict
     np.savez_compressed(path, **arrays)
     loaded = type(posterior).load(tmp_path / "post")
     np.testing.assert_allclose(loaded.sigma_beta_slope, 0.0)
+
+
+# ------------------------------------------------------------------- bivariate (leg) twin
+
+
+def _leg_curve() -> tuple[float, np.ndarray]:
+    """Leg growth peaks about 0.6 y before stature on the transformed axis."""
+    z = np.linspace(-4.0, 4.0, 400)
+    design = np.column_stack([z, *splines.basis(z, KNOTS)])
+    solution, *_ = np.linalg.lstsq(design, 2.5 * z + 3.5 * np.tanh(1.3 * (z + 0.6)), rcond=None)
+    return float(solution[0]), solution[1:]
+
+
+def _bivariate(n: int, visits: int, seed: int) -> tuple[GrowthData, np.ndarray]:
+    rng = np.random.default_rng(seed)
+    linear, coefs = _true_curve()
+    leg_linear, leg_coefs = _leg_curve()
+    prior = rng.uniform(12.5, 15.5, n)
+    beta = prior + rng.normal(0.0, 0.8, n)
+    start = beta + rng.uniform(-2.0, 1.0, n)
+    age = (start[:, None] + np.arange(visits)[None, :] * 0.5).ravel()
+    index = np.repeat(np.arange(n), visits)
+    z = age - beta[index]
+    stature = 150.0 + rng.normal(0, 5.0, n)[index] + splines.spline_value(z, linear, coefs, KNOTS)
+    leg = (
+        75.0 + rng.normal(0, 3.0, n)[index] + splines.spline_value(z, leg_linear, leg_coefs, KNOTS)
+    )
+    data = GrowthData(
+        athlete_ids=tuple(f"a{k}" for k in range(n)),
+        athlete_index=index.astype(np.int64),
+        age=age,
+        stature=stature + rng.normal(0.0, 0.3, age.size),
+        prior_aphv=prior,
+        sex="male",
+        synthetic=True,
+        leg=leg + rng.normal(0.0, 0.3, age.size),
+    )
+    return data, beta
+
+
+def _with_leg(shared: SharedDraws) -> SharedDraws:
+    leg_linear, leg_coefs = _leg_curve()
+    ones = np.ones(shared.n_draws)
+    leg = sitar_bayes.LegCurve(
+        intercept=75.0 * ones,
+        linear=leg_linear * ones,
+        coefs=np.tile(leg_coefs, (shared.n_draws, 1)),
+        sigma=0.3 * ones,
+        sigma_alpha=3.0 * ones,
+        sigma_delta=0.0 * ones,
+    )
+    return SharedDraws(**{**shared.__dict__, "leg": leg})
+
+
+def test_leg_length_sharpens_timing_from_few_visits(config: dict[str, Any]) -> None:
+    data, beta = _bivariate(40, visits=3, seed=31)
+    shared = _shared(300, sigma=0.3)
+    height_only = sitar_bayes.draw_athlete_effects(shared, data, config, seed=2)
+    both = sitar_bayes.draw_athlete_effects(_with_leg(shared), data, config, seed=2)
+    sd_height, sd_both = height_only.beta.std(axis=0), both.beta.std(axis=0)
+    assert np.median(sd_both) < 0.8 * np.median(sd_height)
+    error_height = np.abs(height_only.beta.mean(axis=0) - beta).mean()
+    error_both = np.abs(both.beta.mean(axis=0) - beta).mean()
+    assert error_both < error_height
+    # Without leg data, or with the leg curve absent, nothing changes.
+    no_leg = GrowthData(**{**data.__dict__, "leg": None})
+    again = sitar_bayes.draw_athlete_effects(_with_leg(shared), no_leg, config, seed=2)
+    np.testing.assert_allclose(again.beta, height_only.beta)
+
+
+def test_bivariate_model_builds_and_starts_at_finite_density(config: dict[str, Any]) -> None:
+    data, _ = _bivariate(8, visits=4, seed=32)
+    settings = copy.deepcopy(config)
+    settings["bivariate"]["enabled"] = True
+    model = sitar_bayes.build_model(data, settings)
+    assert {"theta_leg", "sigma_leg", "sigma_alpha_leg"} <= set(model.named_vars)
+    start = {**model.initial_point(), **sitar_bayes.initial_values(data, settings)}
+    assert np.isfinite(model.compile_logp()(start))
+    # Disabled: the stature-only model.
+    plain = sitar_bayes.build_model(data, config)
+    assert "theta_leg" not in plain.named_vars

@@ -56,7 +56,7 @@ def training_data(
     rows = rows[rows["athlete_id"].isin(seasons["athlete_id"].unique())]
     synthetic = bool(rows["synthetic"].any()) if "synthetic" in rows else False
     return sitar_bayes.growth_data_from_measurements(
-        rows, sex, synthetic=synthetic, prior_frame=seasons
+        rows, sex, synthetic=synthetic, prior_frame=seasons, with_leg=bool(config.get("use_leg"))
     )
 
 
@@ -123,7 +123,9 @@ def score_sequences(
         if not seen:
             break
         frame = pd.concat([v.assign(athlete_id=a) for a, v in seen.items()], ignore_index=True)
-        data = sitar_bayes.growth_data_from_measurements(frame, sex, synthetic=False)
+        data = sitar_bayes.growth_data_from_measurements(
+            frame, sex, synthetic=False, with_leg=bool(config.get("use_leg"))
+        )
         twin = sitar_bayes.draw_athlete_effects(shared, data, model_config, seed=seed + k)
         aphv = twin.aphv()
         for j, athlete in enumerate(twin.athlete_ids):

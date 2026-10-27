@@ -34,6 +34,12 @@ marginalisation:             # athlete timing and intensity are integrated out o
   timing_points: 61          # spacing 0.133 SD; finer grids changed the log-likelihood by < 0.1
   intensity_half_width_sd: 3.0
   intensity_points: 5
+bivariate:                   # leg length shares each athlete's timing and tempo (D-133)
+  enabled: false             # on for the real-data twin via configs/external/sequential.yaml
+  priors:                    # ASSUMPTION, scaled to leg length (about half of stature)
+    curve_sd_cm: 20.0
+    size_sd_cm: 5.0
+    residual_sd_cm: 1.0
 outcomes: [stature]          # sitting_height and mass follow once stature is validated
 inference:
   method: nuts               # nuts | advi (fallback for speed)
