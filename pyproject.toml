@@ -85,6 +85,7 @@ select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF", "PTH"]
 "src/youthtwin/paper/methods.py" = ["E501"]
 "src/youthtwin/paper/results.py" = ["E501"]
 "src/youthtwin/paper/ieee.py" = ["E501"]
+"src/youthtwin/paper/twin_paper.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.11"

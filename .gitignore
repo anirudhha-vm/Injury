@@ -58,3 +58,5 @@ runs/
 data/external/*
 paper/ieee/build/
 paper/ieee/*.pdf
+paper/ieee_twin/build/
+paper/ieee_twin/*.pdf
