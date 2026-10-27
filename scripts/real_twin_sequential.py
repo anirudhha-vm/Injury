@@ -169,6 +169,13 @@ def main(
         "run_id": f"realtwin-{config_hash(run_config)}",
         **run_metadata(seed=int(config["seed"]), config=run_config, synthetic=False),
         "dataset": "Berkeley Child Guidance Study (sitar 1.5.0)",
+        "settings": {  # what distinguishes this run (read by scripts/build_twin_paper.py)
+            "method": model_config["inference"]["method"],
+            "leg": leg,
+            "leg_lag": leg_lag,
+            "scenario": config["scenario"],
+            "fold": fold,
+        },
     }
     target = out_dir or repo_root() / "outputs" / "real_twin_sequential" / metadata["run_id"]
     target.mkdir(parents=True, exist_ok=True)
