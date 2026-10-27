@@ -64,3 +64,7 @@ def test_a_curve_without_a_spurt_is_excluded() -> None:
     frame = pd.DataFrame({"athlete_id": "c", "sex": "female", "age": AGES, "stature": linear})
     row = reference_aphv.reference_table(frame, CONFIG).iloc[0]
     assert not row["included"] and row["exclusion_reason"]
+
+
+def test_short_record_has_no_spline_reference() -> None:
+    assert np.isnan(reference_aphv.spline_peak_age(AGES[:4], 120.0 + 5.0 * AGES[:4]))

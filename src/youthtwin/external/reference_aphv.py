@@ -25,6 +25,7 @@ from youthtwin.sim.growth_sim import pb1_height, pb1_peak_offset, pb1_velocity
 FloatArray = NDArray[np.float64]
 _THETA_STARTS_YEARS = (-2.0, -1.0, 0.0, 1.0, 2.0)  # around the initial guess
 _GRID_STEP_YEARS = 0.01
+_MIN_SPLINE_POINTS = 5
 
 
 @dataclass(frozen=True)
@@ -77,6 +78,8 @@ def spline_peak_age(
     """Age of the highest interior velocity peak of a GCV smoothing spline, within ``search``."""
     t = np.asarray(age, dtype=np.float64)
     h = np.asarray(stature, dtype=np.float64)
+    if t.size < _MIN_SPLINE_POINTS:  # too short a record for a smoothing spline
+        return float("nan")
     order = np.argsort(t)
     spline = make_smoothing_spline(t[order], h[order])
     low, high = max(search[0], t.min()), min(search[1], t.max())

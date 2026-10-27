@@ -124,7 +124,7 @@ def main(
     n_folds: int | None = None,
     draws: int | None = None,
     workers: int = 4,
-    leg: bool = True,
+    leg: bool = False,
     leg_lag: bool = True,
     method: str | None = None,
     visit_step: int = 1,
@@ -133,7 +133,7 @@ def main(
     out_dir: Path | None = None,
 ) -> None:
     config = load_config("external/sequential.yaml")
-    config["use_leg"] = leg  # --no-leg: the stature-only twin, for comparison
+    config["use_leg"] = leg  # --leg: the leg-trunk variant (stature-only is primary, R-018)
     config["model_overrides"]["bivariate"]["enabled"] = leg
     # Robustness scenarios change only the held-out children's data, not the reference cohort.
     config["scenario"] = {

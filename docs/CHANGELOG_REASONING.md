@@ -986,3 +986,18 @@ the lead varies.
 **D-135 · Per-athlete leg lag.** Each athlete's leg-to-stature lag `lambda_i ~ Normal(0,
 sigma_lag)` is integrated on a seven-point grid, `sigma_lag` learned. Zero lag SD reproduces
 shared timing exactly (test).
+
+**R-018 · Leg-trunk twin not supported by real data; stature-only twin is primary.** Five-fold
+MAP evaluation on Berkeley (runs `realtwin-c885a8368623` stature only, `realtwin-65277fdeace9`
+shared leg timing, `realtwin-584ebba6ed64` individual leg lag): the individual lag recovers most
+of the loss from shared timing, but neither leg variant beats stature alone in error, bias or
+raw coverage. Reported as a tested extension that real data did not support.
+
+**R-019 · External check, Chard Growth Study (run `chard-90d022557c53`).** Berkeley-trained twin
+applied to 12 girls never seen in training: closer to each girl's own full-record APHV than
+Moore and far more strongly correlated with age at menarche, with menarche about a year after
+the twin's APHV as expected. Small samples (5 with a reference, 8 with menarche): supporting
+evidence only.
+
+**D-136 · Short records get no spline reference** (fewer than five points), so they are excluded
+from scoring instead of crashing the reference fit.

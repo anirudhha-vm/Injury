@@ -11,9 +11,9 @@ forecast_horizon_years: 0.5          # forecast the next six-monthly measurement
 interval_level: 0.90
 circa_phv_half_width_years: 1.0   # 'in the growth spurt now' = within this of PHV (circa-PHV)
 n_posterior_draws: 200
-use_leg: true                        # leg-trunk twin; --no-leg runs the stature-only comparison
+use_leg: false                       # primary: stature-only twin; --leg runs the leg-trunk variant (R-018)
 model_overrides:                     # merged into configs/growth/sitar.yaml
-  bivariate: {enabled: true}
+  bivariate: {enabled: false}
   timing_prior:
     distance_slope: {enabled: true}
   inference: {draws: 500, tune: 500}
