@@ -9,6 +9,7 @@ entry_age_range_years: [8.0, 15.0]   # held-out children enter at a random measu
 max_visits: 6                        # twin updated after each of up to six visits (three years)
 forecast_horizon_years: 0.5          # forecast the next six-monthly measurement
 interval_level: 0.90
+circa_phv_half_width_years: 1.0   # 'in the growth spurt now' = within this of PHV (circa-PHV)
 n_posterior_draws: 200
 model_overrides:                     # merged into configs/growth/sitar.yaml
   timing_prior:

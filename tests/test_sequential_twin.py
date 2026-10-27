@@ -143,3 +143,40 @@ def test_twin_never_looks_ahead(frame: pd.DataFrame, model_config: dict[str, Any
     summary = sequential.summarise(scores, ["visits"])
     assert list(summary["visits"]) == sorted(summary["visits"])
     assert {"twin_mae", "moore_mae", "forecast_coverage", "naive_mae"} <= set(summary.columns)
+    # Decision output: a probability, and the truth label derived only from the reference.
+    assert scores["twin_p_circa"].between(0, 1).all()
+    expected = (scores["age"] - scores["reference_aphv"]).abs() <= CONFIG[
+        "circa_phv_half_width_years"
+    ]
+    assert (scores["circa_now"].astype(bool) == expected).all()
+    overall = sequential.summarise(scores.assign(all="all"), ["all"])
+    assert 0 <= overall["circa_auc_twin"].iloc[0] <= 1
+
+
+def test_conformal_intervals_reach_their_level_and_never_self_calibrate() -> None:
+    """Posterior SDs that are too small by half are rescaled to the target coverage."""
+    rng = np.random.default_rng(7)
+    n = 4000
+    sd = rng.uniform(0.3, 1.0, n)
+    truth = rng.normal(13.0, 1.0, n)
+    scores = pd.DataFrame(
+        {
+            "fold": rng.integers(0, 5, n),
+            "visits": rng.integers(1, 4, n),
+            "reference_aphv": truth,
+            "twin_aphv": truth + rng.normal(0.0, 2.0 * sd),  # true error SD is twice the claimed
+            "twin_sd": sd,
+        }
+    )
+    out = sequential.conformalize(scores, 0.9)
+    assert out["twin_conf_covered"].mean() == pytest.approx(0.9, abs=0.02)
+    naive = (scores["reference_aphv"] - scores["twin_aphv"]).abs() <= 1.645 * scores["twin_sd"]
+    assert naive.mean() < 0.7  # the uncalibrated interval undercovers badly
+    # A row's own error cannot affect its factor: corrupting fold 0 leaves fold 0's factors alone.
+    corrupted = scores.copy()
+    corrupted.loc[corrupted["fold"] == 0, "twin_aphv"] += 50.0
+    again = sequential.conformalize(corrupted, 0.9)
+    fold0 = scores["fold"] == 0
+    np.testing.assert_allclose(
+        again.loc[fold0, "twin_conf_factor"], out.loc[fold0, "twin_conf_factor"]
+    )
