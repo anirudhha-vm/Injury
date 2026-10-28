@@ -40,11 +40,16 @@ PHV was \TwMAE{}~years against \TwMooreMAE{} for the Moore equation (difference 
 95\,\% CI \TwDiffMooreCI{}); the two did not differ at the first visit, and the difference grew to
 \TwDiffMooreLast{}~years by the sixth. The advantage was concentrated in early and late maturers
 (\TwEarlyDiffMoore{} and \TwLateDiffMoore{}~years against Moore), where equations are known to
-fail. A gradient-boosting model trained on the same reference cohort matched the twin overall
-(difference \TwDiffML{}; \TwDiffMLCI{}) but was less accurate after six visits and in early
-maturers. Calibrated intervals covered \TwCovConf{} at nominal \SpecInterval{}, and the
-growth-spurt probability was well calibrated (slope \CircaSlope{}) and discriminated better than
-the equation (AUC \TwCircaAUC{} against \TwCircaAUCMoore{}).
+fail. Classical SITAR, refitted at every visit, was as accurate overall (difference
+\TwDiffSitar{}; \TwDiffSitarCI{}), less accurate in early maturers and more accurate in average
+maturers; gradient boosting likewise matched the twin overall (\TwDiffML{}; \TwDiffMLCI{}). The twin's
+distinctive contribution is its per-child uncertainty. Its calibrated intervals covered \TwCovConf{}
+at nominal \SpecInterval{} and adapted to the child: its error rose from \ErrNarrow{} to
+\ErrWide{}~years from its narrowest to its widest third of intervals, and in that widest third
+its intervals covered \CovTwinWide{} against \CovSitarWide{} for intervals of constant width
+calibrated in the same way around SITAR. The growth-spurt probability was well
+calibrated (slope \CircaSlope{}) and discriminated better than the equation (AUC \TwCircaAUC{}
+against \TwCircaAUCMoore{}).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -67,9 +72,10 @@ uncertainty and cannot use repeated measurements.
 Growth-curve models such as SITAR \cite{cole2010sitar}, including a Bayesian implementation
 \cite{bsitar}, describe each child's curve as a shifted and stretched version of a shared curve and
 estimate age at PHV well from long series. They are fitted retrospectively to complete records,
-and with sparse, irregular sampling a large share of fits show convergence or boundary problems
-\cite{carvalho2025sitar}. Programmes, by contrast, see a few measurements at a time and need an
-answer at each visit. We use the term digital twin for an individual model of this kind, updated as
+and fits to sparse, irregular data can show convergence or boundary problems
+\cite{carvalho2025sitar}; a new child's estimate requires refitting the cohort model, and no
+interval is given for it. Programmes, by contrast, see a few measurements at a time and need an
+answer, with its uncertainty, at each visit. We use the term digital twin for an individual model of this kind, updated as
 data arrive and reporting its uncertainty; our literature search found no such model for
 adolescent growth.
 
@@ -79,9 +85,10 @@ measurement, and feeds a decision (whether the athlete is in the growth spurt). 
 (i) a marginalised Bayesian SITAR-type twin that is exact for one to a few measurements, with a
 timing prior whose spread grows with distance from PHV; (ii) cross-fold conformal calibration of
 its intervals; (iii) an out-of-sample, visit-by-visit evaluation on real longitudinal data against
-the equations used in practice and a machine-learning baseline, with child-level confidence
-intervals; (iv) an analysis by maturity timing, the equations' known failure mode; and
-(v) robustness to the measurement conditions of real programmes and an external check.
+the equations used in practice, classical SITAR refitted at every visit, and a machine-learning
+baseline, with child-level confidence intervals; (iv) an analysis by maturity timing, the
+equations' known failure mode, and of whether calibrated intervals hold for each kind of child;
+and (v) robustness to the measurement conditions of real programmes and an external check.
 
 \section{Methods}
 
@@ -142,7 +149,18 @@ places closest to PHV; extrapolation of the last observed velocity for the forec
 gradient-boosting regressor trained, within each fold, on sequences from the training children
 (features: visits seen, age and measurements at the latest visit, observed stature and
 sitting-height velocities, years observed, Moore estimate; target: the Preece--Baines reference)
-and given the same cross-fold conformal intervals.
+and given the same cross-fold conformal intervals. Classical SITAR \cite{cole2010sitar} was fitted
+by maximum likelihood with the \texttt{sitar} package \cite{sitarpkg} (natural cubic spline with
+\SitarDF{} degrees of freedom, random size, timing and intensity), as a practitioner would use it:
+after each visit it was refitted to the fold's training children's full records together with the
+held-out child's visits so far, and the child's age at PHV was the age of the peak of its fitted
+velocity curve. As SITAR gives no interval for a new child's age at PHV, its estimate, too, was given
+the cross-fold conformal interval.
+
+\emph{Conditional coverage.} Conformal calibration guarantees coverage on average, not for every
+kind of child. We therefore report calibrated coverage within maturity-timing groups and within
+thirds of the twin's interval width (formed within each sex and number of visits), where intervals
+that adapt to the child should hold their coverage and intervals of constant width should not.
 
 \emph{Inference.} Differences are reported with 95\,\% percentile intervals from \TwBootN{}
 bootstrap resamples of children, since a child contributes up to \TwMaxVisits{} correlated
@@ -235,6 +253,44 @@ more accurate after six visits (\TwDiffMLLast{}; \TwDiffMLLastCI{}) and in early
 (\TwEarlyDiffML{}; \TwEarlyDiffMLCI{}), and against the spline reference (\SplineTwin{} against
 \SplineML{}); in average and late maturers the two did not differ significantly.
 
+\subsection{Classical SITAR}
+All \SitarRows{} SITAR refits converged, helped by fitting each sparse child
+together with the reference children's full records. SITAR's error was \SitarMAE{}~years against
+\SitarTwinSame{} for the twin on the same evaluations (difference \TwDiffSitar{}; \TwDiffSitarCI{}),
+with no significant difference at the first visit (\TwDiffSitarFirst{}; \TwDiffSitarFirstCI{}) or
+the sixth (\TwDiffSitarLast{}; \TwDiffSitarLastCI{}), nor in growth-spurt discrimination (AUC
+\SitarAUC{}; difference \TwDiffSitarAUC{}; \TwDiffSitarAUCCI{}). The twin was more accurate in
+early maturers (\TwEarlyDiffSitar{}; \TwEarlyDiffSitarCI{}) and less accurate in average maturers
+(\TwAverageDiffSitar{}; \TwAverageDiffSitarCI{}); in late maturers they did not differ
+(\TwLateDiffSitar{}; \TwLateDiffSitarCI{}). Against the smoothing-spline reference SITAR's error
+was \SplineSitar{} and the twin's \SplineTwinSitarRows{}. With the conformal interval SITAR's
+coverage was \SitarCov{} at a width of \SitarWidth{}~years.
+
+\subsection{Do calibrated intervals hold for each child?}
+Average coverage was close to nominal for all three methods, but not within subgroups
+(Table~\ref{tab:coverage}). The twin's posterior standard deviation tracked its error (Spearman
+\AdaptRho{}): from its narrowest to its widest third of intervals the twin's error rose from
+\ErrNarrow{} to \ErrWide{}~years and its coverage was \CovTwinNarrow{}, \CovTwinMiddle{} and
+\CovTwinWide{}, somewhat below nominal in the narrowest third. SITAR's constant-width intervals
+varied more and in the opposite direction: they over-covered the easy cases (\CovSitarNarrow{};
+difference from the twin \CovNarrowDiffSitar{}, \CovNarrowDiffSitarCI{}) and under-covered the hard
+ones (\CovSitarWide{}; \CovWideDiffSitar{}, \CovWideDiffSitarCI{}). In early maturers the twin
+covered \CovTwinEarly{} against \CovSitarEarly{} for SITAR and \CovMlEarly{} for boosting, a
+difference from SITAR (\CovEarlyDiffSitar{}; \CovEarlyDiffSitarCI{}) that is not significant in
+\TwEarlyChildren{} children. In late
+maturers all three under-covered (twin \CovTwinLate{}, SITAR \CovSitarLate{}, boosting
+\CovMlLate{}; difference from SITAR \CovLateDiffSitar{}, \CovLateDiffSitarCI{}), and in average
+maturers all three over-covered (twin \CovTwinAverage{}, SITAR \CovSitarAverage{}).
+
+\begin{table}[!t]
+\caption{Coverage of calibrated nominal \SpecInterval{} intervals within subgroups (real data,
+held-out children). Width thirds are formed from the twin's interval within each sex and number of
+visits; MAE and width in years.}
+\label{tab:coverage}
+\centering
+\resizebox{\columnwidth}{!}{\input{../tables/twin_tab_coverage.tex}}
+\end{table}
+
 \subsection{Forecasting the next measurement}
 The twin's \SpecHorizon{}-month forecast error was \TwForecastMAESame{}~cm against \TwNaiveMAE{} for
 extrapolating the last observed velocity on the same visits. Calibrated forecast intervals covered
@@ -281,31 +337,42 @@ concentrated exactly there, and it grows as visits accumulate, which is how prog
 data. It also does what an equation cannot: it states its uncertainty, and once conformally
 calibrated its intervals and its growth-spurt probability mean what they say.
 
-The comparison with gradient boosting sharpens the claim. A flexible model trained on the reference
-cohort's labels was as accurate on average, so the twin's value is not raw accuracy from few
-visits. Its advantages are structural: it is learned from growth records rather than from
-reference ages at PHV, so its estimate does not inherit one reference definition (it led against
-the spline reference); it is coherent across visits and keeps improving where the boosted model
-plateaued; it handles early maturers better; and it yields a full growth state, with forecasts and
-an interpretable timing posterior, rather than a single number.
+The comparisons with classical SITAR and gradient boosting sharpen the claim. Both were as accurate
+on average, so the twin's value is not raw accuracy: once repeated measurements are modelled with a
+shared growth curve, by maximum likelihood or Bayesian updating, point estimates are similar, and
+SITAR was somewhat better in average maturers. The twin's distinctive contribution is uncertainty
+that is specific to the child. Conformal calibration makes any estimator's intervals right on
+average, but intervals of constant width are too wide for the children who are easy to place and
+too narrow for those who are not. The twin's posterior widths separated these children, so its
+calibrated coverage varied much less across them and was significantly higher for the hardest
+cases; the same direction in early maturers, a group of particular concern for bio-banding and
+growth-related injury, needs a larger sample to confirm. Child-specific uncertainty is what makes
+an estimate usable for decisions about an individual. The twin also updates a new child without
+refitting the cohort model, and against boosting it was more accurate after six visits and in early
+maturers and against the spline reference.
 
-Several findings limit the claims. The twin gave no gain at the first visit and was not
-significantly better than Mirwald in boys. Calibrated coverage was lower in late maturers. Its
+Several findings limit the claims. The twin gave no gain over Moore at the first visit, was not
+significantly better than Mirwald in boys, and was not more accurate than classical SITAR overall.
+Calibrated coverage was below nominal in late maturers for all methods, and the twin's
+intervals were somewhat too narrow for the children it placed most confidently. Its
 six-month forecast was only on a par with velocity extrapolation, and leg length, despite the
 known earlier peak of the legs, did not improve the estimate because the leg-to-stature lag varies
 between children.
 
 \emph{Limitations.} The development data come from a historical North American cohort; the twin has
 not been tested in athletes or in Indian children, where growth timing differs, and the external
-check is small. We did not benchmark against frequentist or Bayesian SITAR fitted to the same sparse
-visits \cite{bsitar,carvalho2025sitar}, nor against the maturity-ratio equation of Fransen et al.;
-the shared curve was fitted at its posterior mode, with full MCMC checked on one fold.
+check is small. Classical SITAR was benchmarked on stature only and with one spline basis; we did
+not benchmark Bayesian SITAR \cite{bsitar}, which could provide child-level intervals of its own,
+nor the maturity-ratio equation of Fransen et al.; the reference age at PHV is itself a model
+estimate; and the shared curve was fitted at its posterior mode, with full MCMC checked on one
+fold.
 
 \section{Conclusion}
-A sequentially updated, uncertainty-calibrated growth twin can replace one-off maturity equations in
-youth sport programmes where it matters most: in early and late maturers, and as measurements
-accumulate. It states how sure it is and answers the question practitioners ask, whether an athlete
-is in the growth spurt now.
+A sequentially updated growth twin can replace one-off maturity equations in youth sport programmes
+where it matters most: in early and late maturers, and as measurements accumulate. It is as accurate
+as classical SITAR refitted at every visit, and adds what SITAR does not give: calibrated
+uncertainty that is specific to each child, and a probability that the athlete is in the growth
+spurt now.
 
 \section*{Data and Code Availability}
 Berkeley and Chard data: \texttt{sitar} R package (CRAN). Code, configuration and run records are in

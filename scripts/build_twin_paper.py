@@ -37,6 +37,7 @@ def main(tectonic: Path | None = None) -> None:
     configs = {
         "sequential": load_config("external/sequential.yaml"),
         "analysis": load_config("external/twin_analysis.yaml"),
+        "sitar": load_config("external/sitar_benchmark.yaml"),
     }
     values, tables, runs = twin_paper.build(
         repo_root() / "outputs" / "real_twin_sequential",

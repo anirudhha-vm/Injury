@@ -356,6 +356,11 @@ def build(
     nuts_values(runs, values)
     chard_values(chard, values)
     tables.update(analysis_values(analysis, values))
+    sitar_df = configs.get("sitar", {}).get("spline_df")
+    if sitar_df is None:
+        values.pending("SitarDF")
+    else:
+        values.put("SitarDF", _number(int(sitar_df), 0), "configs/external/sitar_benchmark.yaml")
     timing_sd = float(configs.get("analysis", {}).get("timing_group_width_sd", float("nan")))
     values.put("SpecTimingSD", _number(timing_sd, 0), "configs/external/twin_analysis.yaml")
     return values, tables, runs
@@ -363,6 +368,78 @@ def build(
 
 def _signed(value: float, digits: int = 2) -> str:
     return _number(float(value), digits)
+
+
+SITAR_SCALARS = (
+    "SitarMAE",
+    "SitarTwinSame",
+    "SitarBias",
+    "SitarCov",
+    "SitarWidth",
+    "SitarAUC",
+    "SitarFail",
+    "SitarEdge",
+    "SitarRows",
+    "SplineSitar",
+    "SplineTwinSitarRows",
+    "AdaptRho",
+)
+COVERAGE_CELLS = [
+    f"Cov{method}{subset}"
+    for method in ("Twin", "Sitar", "Ml")
+    for subset in ("Early", "Average", "Late", "Narrow", "Middle", "Wide")
+] + [f"Err{subset}" for subset in ("Narrow", "Middle", "Wide")]
+
+
+def _sitar_values(record: Mapping[str, Any], rid: str, values: Values) -> None:
+    sitar = record.get("sitar_benchmark") or {}
+    if not sitar:
+        values.pending(*SITAR_SCALARS)
+        return
+    values.number("SitarMAE", sitar["sitar_mae"], rid)
+    values.number("SitarTwinSame", sitar["twin_mae_same_rows"], rid)
+    values.put("SitarBias", _signed(sitar["sitar_bias"]), rid)
+    values.put("SitarCov", percent(sitar["sitar_conf_coverage"]), rid)
+    values.number("SitarWidth", sitar["sitar_conf_width"], rid)
+    values.number("SitarAUC", record["circa_calibration"]["auc_sitar"], rid)
+    values.number("SitarFail", int(sitar["n_failed"]), rid)
+    values.number("SitarEdge", int(sitar["n_edge"]), rid)
+    values.number("SitarRows", int(sitar["n_rows"]), rid)
+    values.number("SplineSitar", sitar["sitar_mae_vs_spline"], rid)
+    values.number("SplineTwinSitarRows", sitar["twin_mae_vs_spline_same_rows"], rid)
+    values.number("AdaptRho", record["interval_adaptivity"]["spearman_twin_sd_abs_error"], rid)
+
+
+def _coverage_table(run: Path, rid: str, values: Values) -> str:
+    """Calibrated coverage by maturity timing and by thirds of the twin's interval width."""
+    path = run / "conditional_coverage.csv"
+    if not path.is_file():
+        values.pending(*COVERAGE_CELLS)
+        return PENDING
+    table = pd.read_csv(path)
+    methods = [("Twin", "twin_conf_covered"), ("Ml", "ml_conf_covered")]
+    if "sitar_conf_covered" in table:
+        methods.insert(1, ("Sitar", "sitar_conf_covered"))
+    rows = []
+    for _, r in table.iterrows():
+        subset = str(r["subset"]).capitalize()
+        for method, column in methods:
+            values.put(f"Cov{method}{subset}", percent(float(r[column])), rid)
+        if r["split"] == "width_third":
+            values.number(f"Err{subset}", float(r["twin_mae"]), rid)
+        label = f"{subset} maturers" if r["split"] == "timing" else f"{subset} third of twin width"
+        rows.append(
+            [
+                label,
+                _number(int(r["n"]), 0),
+                _number(float(r["twin_mae"]), 2),
+                _number(float(r["twin_conf_width"]), 2),
+                *[percent(float(r[column])) for _, column in methods],
+            ]
+        )
+    names = {"Twin": "Twin", "Sitar": "SITAR", "Ml": "Boosting"}
+    header = ["Subset", "n", "Twin MAE", "Twin width", *[f"{names[m]} cov." for m, _ in methods]]
+    return tabular("l" + "r" * (len(header) - 1), header, rows)
 
 
 def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
@@ -384,6 +461,18 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
         ("twin_minus_ml_mae", "average maturers"): "TwAverageDiffML",
         ("twin_minus_moore_mae", "late maturers"): "TwLateDiffMoore",
         ("twin_minus_ml_mae", "late maturers"): "TwLateDiffML",
+        ("twin_minus_sitar_mae", "all"): "TwDiffSitar",
+        ("twin_minus_sitar_mae", "visit 1"): "TwDiffSitarFirst",
+        ("twin_minus_sitar_mae", "visit 6"): "TwDiffSitarLast",
+        ("twin_minus_sitar_circa_auc", "all"): "TwDiffSitarAUC",
+        ("twin_minus_sitar_mae", "early maturers"): "TwEarlyDiffSitar",
+        ("twin_minus_sitar_mae", "average maturers"): "TwAverageDiffSitar",
+        ("twin_minus_sitar_mae", "late maturers"): "TwLateDiffSitar",
+        ("twin_minus_sitar_coverage", "early maturers"): "CovEarlyDiffSitar",
+        ("twin_minus_sitar_coverage", "average maturers"): "CovAverageDiffSitar",
+        ("twin_minus_sitar_coverage", "late maturers"): "CovLateDiffSitar",
+        ("twin_minus_sitar_coverage", "narrow intervals"): "CovNarrowDiffSitar",
+        ("twin_minus_sitar_coverage", "wide intervals"): "CovWideDiffSitar",
     }
     scalars = [
         "TwEarlyChildren",
@@ -401,10 +490,17 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
         "SplineML",
         "TwBootN",
         "TwTimingSD",
+        *SITAR_SCALARS,
     ]
     if run is None:
-        values.pending(*pairs.values(), *[f"{n}CI" for n in pairs.values()], *scalars)
-        return {"twin_tab_comparisons.tex": PENDING, "twin_tab_timing.tex": PENDING}
+        values.pending(
+            *pairs.values(), *[f"{n}CI" for n in pairs.values()], *scalars, *COVERAGE_CELLS
+        )
+        return {
+            "twin_tab_comparisons.tex": PENDING,
+            "twin_tab_timing.tex": PENDING,
+            "twin_tab_coverage.tex": PENDING,
+        }
     rid = _rid(run)
     values.runs["twin_analysis"] = rid
     intervals = pd.read_csv(run / "intervals.csv")
@@ -416,7 +512,7 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
             values.pending(name, f"{name}CI")
             continue
         r = match.iloc[0]
-        digits = 3 if "auc" in comparison else 2
+        digits = 3 if "auc" in comparison or "coverage" in comparison else 2
         values.put(name, _signed(r["estimate"], digits), rid)
         values.put(
             f"{name}CI", f"{_signed(r['ci_low'], digits)} to {_signed(r['ci_high'], digits)}", rid
@@ -428,6 +524,9 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
             "twin_minus_moore_circa_auc": "Twin $-$ Moore, spurt AUC",
             "twin_minus_ml_mae": "Twin $-$ boosting, MAE",
             "twin_minus_ml_circa_auc": "Twin $-$ boosting, spurt AUC",
+            "twin_minus_sitar_mae": "Twin $-$ SITAR, MAE",
+            "twin_minus_sitar_circa_auc": "Twin $-$ SITAR, spurt AUC",
+            "twin_minus_sitar_coverage": "Twin $-$ SITAR, coverage",
         }[comparison]
         excludes = "yes" if (r["ci_low"] > 0 or r["ci_high"] < 0) else "no"
         rows.append(
@@ -455,11 +554,13 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
     values.number("SplineTwin", spline["twin_mae_vs_spline"], rid)
     values.number("SplineMoore", spline["moore_mae_vs_spline"], rid)
     values.number("SplineML", spline["ml_mae_vs_spline"], rid)
+    _sitar_values(record, rid, values)
     comparisons = tabular(
         "llrrc", ["Comparison", "Subset", "Difference", "95\\% CI", "Excludes 0"], rows
     )
 
     timing = pd.read_csv(run / "timing_groups.csv")
+    with_sitar = "sitar_mae" in timing
     timing_rows = []
     for _, r in timing.iterrows():
         group = str(r["timing"])
@@ -470,13 +571,21 @@ def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
                 _number(int(r["n_children"]), 0),
                 f"{_number(float(r['twin_mae']), 2)} ({_signed(r['twin_bias'])})",
                 f"{_number(float(r['ml_mae']), 2)} ({_signed(r['ml_bias'])})",
+                *(
+                    [f"{_number(float(r['sitar_mae']), 2)} ({_signed(r['sitar_bias'])})"]
+                    if with_sitar
+                    else []
+                ),
                 f"{_number(float(r['moore_mae']), 2)} ({_signed(r['moore_bias'])})",
                 percent(float(r["twin_conf_coverage"])),
             ]
         )
-    timing_table = tabular(
-        "lrrrrr",
-        ["Maturity timing", "Children", "Twin", "Boosting", "Moore", "Twin conf. cov."],
-        timing_rows,
-    )
-    return {"twin_tab_comparisons.tex": comparisons, "twin_tab_timing.tex": timing_table}
+    header = ["Maturity timing", "Children", "Twin", "Boosting", "Moore", "Twin conf. cov."]
+    if with_sitar:
+        header.insert(4, "SITAR")
+    timing_table = tabular("l" + "r" * (len(header) - 1), header, timing_rows)
+    return {
+        "twin_tab_comparisons.tex": comparisons,
+        "twin_tab_timing.tex": timing_table,
+        "twin_tab_coverage.tex": _coverage_table(run, rid, values),
+    }
