@@ -190,7 +190,8 @@ def main(
         results = list(pool.map(_fold, jobs))
     scores = pd.concat([s for s, _ in results], ignore_index=True)
     scores["band"] = pd.cut(scores["years_from_phv"], BANDS, labels=BAND_LABELS).astype(str)
-    scores = sequential.conformalize(scores, float(config["interval_level"]), by=("visits",))
+    # Calibrated separately by sex and by number of visits seen (both known at prediction time).
+    scores = sequential.conformalize(scores, float(config["interval_level"]), by=("sex", "visits"))
     scores["synthetic"] = False
     scores.to_csv(target / "scores.csv", index=False)
     by_visits = sequential.summarise(scores, ["sex", "visits"])
