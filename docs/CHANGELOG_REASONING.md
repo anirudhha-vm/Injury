@@ -1056,3 +1056,9 @@ maturity timing, ML baseline, statistics. References checked this session: Cummi
 added), Tuddenham & Snyder 1954 (issue number added), Koziel & Malina 2018 (DOI added; pages
 marked for checking), Carvalho preprint and bsitar marked for checking. Remaining limitations
 stated: no SITAR/bsitar or Fransen benchmark (R install and coefficient verification blocked).
+
+**R-024 · Full-MCMC check (fold 0, run realtwin-ad43944440e9).** NUTS for the shared curve
+(1 worker, 200 draws) gave twin MAE 0.61 years and raw coverage 81%, against 0.59 and 83% with
+the posterior mode on the same children: the MAP approximation does not change the conclusions.
+Largest R-hat 1.04, smallest bulk ESS 84 — short of the 1.01 criterion, so the manuscript calls
+it a consistency check, not a full-MCMC evaluation. A longer run is a limitation, not a blocker.
