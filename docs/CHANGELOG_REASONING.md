@@ -1014,3 +1014,12 @@ extrapolation.
 **D-137 · The Path A manuscript** is `paper/ieee_twin/` (generator `paper/twin_paper.py`, build
 `scripts/build_twin_paper.py`); the injury-focused manuscript in `paper/ieee/` is kept as the
 earlier version. Run records now carry `settings` so the generator can tell runs apart.
+
+**D-138 · Conformal calibration stratified by sex and number of visits.** Pooling the sexes left
+girls' calibrated coverage at 84-85% and boys' at 95-97% after five or six visits. Calibrating
+within sex and visit count (both known at prediction time) gives 89-92% in every cell. All six
+MAP runs were redone (same settings, same run IDs). By distance from PHV, calibrated coverage
+still ranges more widely (Table II), because distance is not known at prediction time.
+
+**R-021 · First full-MCMC check crashed** (eight chains at once; sampler processes lost their
+pipes, probably memory). Restarted one sex at a time with 200 + 200 draws.
