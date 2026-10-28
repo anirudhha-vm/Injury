@@ -1062,3 +1062,31 @@ stated: no SITAR/bsitar or Fransen benchmark (R install and coefficient verifica
 the posterior mode on the same children: the MAP approximation does not change the conclusions.
 Largest R-hat 1.04, smallest bulk ESS 84 — short of the 1.01 criterion, so the manuscript calls
 it a consistency check, not a full-MCMC evaluation. A longer run is a limitation, not a blocker.
+
+## M12 — classical SITAR benchmark (2026-10-28)
+
+**D-141 · SITAR refitted per child and visit (scripts/real_twin_sitar.py, scripts/r/sitar_refit.R).**
+R 4.3.3 + `sitar` 1.5.0 became available. Benchmark design: the way a practitioner would use SITAR —
+for each held-out child and visit count, refit on the fold's training children's full records plus
+the child's visits so far, age at PHV from the peak of the fitted velocity curve. Same folds, seeds
+and entry ages as the primary twin run (checked at merge). Stature only; spline df 5 (ASSUMPTION).
+SITAR gives no interval for a new child, so it gets the same cross-fold conformal interval as the
+boosting baseline.
+
+**R-025 · SITAR is as accurate as the twin (run sitar-60127d624a42).** 816/816 refits converged
+(fitting each sparse child jointly with dense reference records avoids the failures reported for
+sparse-only fits). Twin − SITAR MAE +0.01 (95% CI −0.05 to 0.06); no difference at visit 1 or 6 or
+in spurt AUC; twin better in early maturers (−0.23, −0.37 to −0.10), SITAR better in average
+maturers (+0.07, 0.01 to 0.13). Against the spline reference SITAR leads (0.55 vs 0.56). The paper
+no longer claims an accuracy advantage over growth-curve modelling; only over the equations, and
+over boosting at six visits and in early maturers.
+
+**D-142 · Conditional coverage (twin_stats.width_thirds, coverage_difference).** With conformal
+intervals SITAR covers 90% on average at a width similar to the twin's, so "only the twin has
+trustworthy uncertainty" is false on average. Tested instead whether coverage holds per child:
+coverage by maturity timing and by thirds of the twin's interval width (within sex x visits).
+**R-026.** Twin posterior SD tracks error (Spearman 0.44). Across width thirds the twin covers
+85/91/96% (error 0.36→0.72 y); constant-width SITAR covers 97/89/83% — twin − SITAR in the wide third
++0.13 (0.05 to 0.21), narrow third −0.12 (−0.18 to −0.07). Early maturers 90% vs 75%, not significant
+(19 children). Late maturers under-covered by all methods. The paper's claim for the twin is now
+child-specific uncertainty (and updating without refitting), stated with these limits.

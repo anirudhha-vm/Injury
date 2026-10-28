@@ -95,3 +95,21 @@ def test_ml_training_uses_only_training_children() -> None:
     assert first["visits"] == 1 and np.isnan(first["velocity_mean"])
     two = ml_baseline.features(visits.head(2), "male")
     assert two["age_last"] == pytest.approx(visits["age"].iloc[1])
+
+
+def test_width_thirds_split_each_cell_and_coverage_difference_pairs_rows() -> None:
+    scores = pd.DataFrame(
+        {
+            "sex": ["male"] * 6 + ["female"] * 3,
+            "visits": [1] * 3 + [2] * 3 + [1] * 3,
+            "width": [3.0, 1.0, 2.0, 0.5, 0.7, 0.6, 9.0, 8.0, 7.0],
+            "a": [1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, np.nan],
+            "b": [0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0],
+        }
+    )
+    thirds = twin_stats.width_thirds(scores, "width")
+    for _, cell in scores.assign(third=thirds).groupby(["sex", "visits"]):
+        ordered = cell.sort_values("width")["third"].tolist()
+        assert ordered == list(twin_stats.WIDTH_THIRDS)  # within a cell, not across cells
+    # the row where ``a`` is missing is dropped from both sides
+    assert twin_stats.coverage_difference("a", "b")(scores) == pytest.approx(6 / 8 - 2 / 8)

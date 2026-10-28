@@ -7,7 +7,9 @@ Everything here works on the per-visit scores of ``scripts/real_twin_sequential.
 - error and bias by maturity timing (early / average / late maturers), the known failure mode
   of maturity-offset equations (Koziel & Malina 2018);
 - calibration of the growth-spurt probability;
-- sensitivity to the reference: the smoothing-spline age at PHV instead of Preece-Baines.
+- sensitivity to the reference: the smoothing-spline age at PHV instead of Preece-Baines;
+- conditional coverage: whether calibrated intervals hold within maturity-timing groups and
+  within thirds of the twin's own interval width (adaptive versus constant-width intervals).
 """
 
 from __future__ import annotations
@@ -122,6 +124,27 @@ def by_timing_group(scores: pd.DataFrame, groups: Mapping[str, str]) -> pd.DataF
             }
         )
     return pd.DataFrame(rows)
+
+
+def coverage_difference(covered: str, comparator: str) -> Statistic:
+    """Coverage of one interval minus another, on rows where both are scored."""
+
+    def statistic(frame: pd.DataFrame) -> float:
+        rows = frame.dropna(subset=[covered, comparator])
+        return float(rows[covered].astype(float).mean() - rows[comparator].astype(float).mean())
+
+    return statistic
+
+
+WIDTH_THIRDS = ("narrow", "middle", "wide")
+
+
+def width_thirds(
+    scores: pd.DataFrame, width: str, by: Sequence[str] = ("sex", "visits")
+) -> pd.Series:
+    """Thirds of the twin's interval width within each ``by`` cell (ties broken by order)."""
+    ranks = scores.groupby(list(by))[width].rank(method="first", pct=True)
+    return pd.cut(ranks, [0.0, 1 / 3, 2 / 3, 1.0], labels=list(WIDTH_THIRDS)).astype(object)
 
 
 def circa_calibration(scores: pd.DataFrame) -> dict[str, float]:

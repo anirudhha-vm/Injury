@@ -1,0 +1,6 @@
+# Classical SITAR benchmark (M12): R package sitar (Cole et al. 2010), nlme fit, refitted for
+# each held-out child and visit count on the fold's training children plus that child's visits.
+measure: stature                 # SITAR models one measure; stature, as in the twin's curve
+spline_df: 5                     # ASSUMPTION: df of the shared natural cubic spline (sitar default practice for height)
+peak_grid_step_years: 0.01       # resolution of the velocity-peak search over train_age_range_years
+workers: 10                      # parallel R processes (one per sex x fold)

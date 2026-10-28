@@ -49,6 +49,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `external/runners.yaml` | Source files and checksums of the real runners' injury dataset, and its evaluation settings | ✅ |
 | `external/sequential.yaml` | M11 sequential twin evaluation: folds, ages, visits, horizon, interval level, growth-spurt window, model overrides | ✅ |
 | `external/twin_analysis.yaml` | Bootstrap, maturity-timing and ML-baseline settings | ✅ |
+| `external/sitar_benchmark.yaml` | Classical SITAR benchmark settings (spline df, peak grid, workers) | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions except the cited mean age at PHV) | ✅ |
 | `sim/calibration.yaml` | Target incidence for calibrating the synthetic injury process (cited) | ✅ |
 | `sim/validation.yaml` | Synthetic markerless-vs-mocap study: groups, body scale, error model, calibration target (cited), replicates | ✅ |
@@ -126,6 +127,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `external/sequential.py` | M11: fold assignment, reference-cohort training data, entry sequences and scenarios, visit-by-visit twin scoring, conformal calibration, summaries | ✅ |
 | `external/twin_stats.py` | Child-level bootstrap intervals, maturity-timing groups, growth-spurt probability calibration | ✅ |
 | `external/ml_baseline.py` | Gradient-boosting baseline for age at PHV on the same visits and folds as the twin; conformal half-widths | ✅ |
+| `external/sitar_benchmark.py` | Classical SITAR benchmark: training and per-visit task rows for the R refits, runs `scripts/r/sitar_refit.R` | ✅ |
 | `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
 | `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
 | `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
@@ -163,7 +165,9 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `real_risk_runners.py` | Risk models on real injury outcomes (runners) under three split schemes; athlete-bootstrap intervals, paired differences, calibration, leakage inflation; to `outputs/real_risk_runners/<run_id>/` | ✅ |
 | `real_twin_sequential.py` | M11: sequential growth twin on Berkeley; folds by child, MAP or NUTS reference curve, visit-by-visit updating, forecasts, conformal intervals, growth-spurt probability, robustness scenarios, leg variants | ✅ |
 | `real_twin_external_chard.py` | M11: Berkeley-trained twin applied to the Chard Growth Study girls; vs own-record APHV and age at menarche | ✅ |
-| `real_twin_analysis.py` | Secondary analyses of the primary twin run: intervals, maturity timing, calibration, reference sensitivity, ML baseline | ✅ |
+| `real_twin_analysis.py` | Secondary analyses of the primary twin run: intervals, maturity timing, calibration, reference sensitivity, ML baseline, SITAR comparisons, conditional coverage | ✅ |
+| `real_twin_sitar.py` | Classical SITAR (R `sitar`) refitted per held-out child and visit on the twin's folds → `outputs/real_twin_sitar/` | ✅ |
+| `r/sitar_refit.R` | R side of the SITAR benchmark: `sitar` fit on training + child's visits, age at PHV from the velocity peak | ✅ |
 | `calibrate_simulation.py` | Finds the growth-related hazard intercept that gives the published incidence, exactly from the true hazards; writes `outputs/calibration/<run_id>/` | ✅ |
 | `sim_study_validation.py` | Synthetic validity study: calibrates the markerless error, simulates the planned 36-participant study, repeats it for precision; to `outputs/sim_study_validation/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines, the confirmatory model and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
@@ -219,7 +223,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_results_draft.py` | Untagged numbers in the generated results; synthetic sections not labelled; missing runs silently dropped | ✅ |
 | `test_ieee_paper.py` | IEEE values not traceable to their run; pending runs not marked; macros used in `main.tex` that the generator never defines | ✅ |
 | `test_twin_paper.py` | Twin runs misclassified; results not pending without runs; manuscript macros not generated | ✅ |
-| `test_twin_stats.py` | Bootstrap not resampling children; timing groups mixing sexes; ML baseline training on held-out children or using future visits | ✅ |
+| `test_twin_stats.py` | Bootstrap not resampling children; timing groups mixing sexes; ML baseline training on held-out children or using future visits; width thirds crossing cells | ✅ |
+| `test_sitar_benchmark.py` | SITAR refits seeing held-out children or future visits; recovery of known age at PHV (needs R + sitar) | ✅ |
 | `test_sequential_twin.py` | Folds overlapping; held-out children in training; twin looking ahead; conformal intervals self-calibrating or missing their level; scenarios changing more than the held-out data | ✅ |
 | `cohort_settings.py` | Test helper: the realistic cohort config plus `sim/test_signal.yaml` | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
@@ -243,6 +248,8 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `docs/protocol/05_retrospective_growth_records.md` | What to collect for a second real growth dataset (existing school/academy records), permissions first | ✅ draft |
 | `docs/ethics/DRAFT_data_request_CIDAF.md` | Draft email requesting the Coimbra Soccer Longitudinal Project data (external validation on athletes) | ✅ draft |
 | `docs/plans/M11.md` | Path A plan: growth twin validated on real data (sequential updating, forecasts, coverage fix) | ✅ |
+| `docs/plans/M12.md` | Plan: classical SITAR benchmark on the twin's held-out visits | ✅ |
+| `docs/plans/M12_done.md` | SITAR benchmark outcome: accuracy equivalent to the twin; conditional coverage added | ✅ |
 | `docs/ethics/DRAFT_*.md` | DRAFT consent, assent, data-management plan — need ethics/legal review | ✅ draft |
 | `docs/data_dictionary.md` | Every field, unit and allowed value | ✅ |
 | `paper/manuscript_outline.md` | Single-paper structure: which layer is real data and which is simulation; numbers only via `paper/results_draft.md` | ✅ |
