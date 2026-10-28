@@ -1047,3 +1047,12 @@ sixth visit. The twin's advantage concentrates in early and late maturers (vs Mo
 gradient boosting in early maturers); for average maturers the three are equivalent. The
 growth-spurt probability is well calibrated. Against the spline reference the twin leads both.
 The paper's claims are revised accordingly.
+
+**D-140 · Manuscript revised to the intervals (paper/ieee_twin).** Claims now follow the
+bootstrap intervals: no gain over Moore at the first visit; not significantly better than
+Mirwald in boys; gradient boosting equivalent overall; the twin's advantage stated where it is
+significant (after several visits; early and late maturers; growth-spurt AUC). New sections:
+maturity timing, ML baseline, statistics. References checked this session: Cumming 2017 (DOI
+added), Tuddenham & Snyder 1954 (issue number added), Koziel & Malina 2018 (DOI added; pages
+marked for checking), Carvalho preprint and bsitar marked for checking. Remaining limitations
+stated: no SITAR/bsitar or Fransen benchmark (R install and coefficient verification blocked).

@@ -27,22 +27,24 @@
 \maketitle
 
 \begin{abstract}
-Youth sport programmes estimate each athlete's biological maturity to group players, manage
-training load and anticipate growth-related injury, usually with a single equation applied to one
-measurement. Such equations carry no uncertainty and do not learn from repeated measurements. We
-present a growth twin: a per-athlete Bayesian growth-curve state, learned against a reference
-cohort, that is updated after every new measurement, estimates age at peak height velocity (PHV)
-with calibrated intervals, gives the probability that the athlete is in the growth spurt now, and
-forecasts the next measurement. The timing prior widens with distance from PHV, and conformal
-calibration on held-out athletes makes the intervals cover at their nominal level. In five-fold
-validation by child on the real Berkeley Child Guidance Study (\TwChildren{} children,
-\TwEvaluations{} visit-by-visit evaluations), the twin's error in age at PHV was \TwMAE{}~years
-against \TwMooreMAE{} for the Moore equation and \TwMirwaldMAE{} for Mirwald, and fell from
-\TwMAEFirst{} after one visit to \TwMAELast{} after \TwMaxVisits{}, while the equation's error improved
-only from \TwMooreFirst{} to \TwMooreLast{}. Calibrated intervals covered \TwCovConf{} of cases at nominal \SpecInterval{}, and the
-growth-spurt probability discriminated with an AUC of \TwCircaAUC{} against \TwCircaAUCMoore{} for
-the equation. In an external cohort of \ChGirls{} girls, the twin's estimate correlated
-\ChCorrTwin{} with age at menarche against \ChCorrMoore{} for the equation.
+Youth sport programmes estimate biological maturity to group players, manage training load and
+anticipate growth-related injury, usually with a maturity-offset equation applied to one
+measurement. These equations carry no uncertainty, do not learn from repeated measurements, and
+are systematically wrong in early and late maturers. We present a growth twin: a per-athlete
+Bayesian growth-curve state, learned against a reference cohort and updated after every new
+measurement, that estimates age at peak height velocity (PHV) with conformally calibrated
+intervals, gives the probability that the athlete is in the growth spurt now, and forecasts the
+next measurement. In five-fold validation by child on the real Berkeley Child Guidance Study
+(\TwChildren{} children, \TwEvaluations{} visit-by-visit evaluations), the twin's error in age at
+PHV was \TwMAE{}~years against \TwMooreMAE{} for the Moore equation (difference \TwDiffMoore{};
+95\,\% CI \TwDiffMooreCI{}); the two did not differ at the first visit, and the difference grew to
+\TwDiffMooreLast{}~years by the sixth. The advantage was concentrated in early and late maturers
+(\TwEarlyDiffMoore{} and \TwLateDiffMoore{}~years against Moore), where equations are known to
+fail. A gradient-boosting model trained on the same reference cohort matched the twin overall
+(difference \TwDiffML{}; \TwDiffMLCI{}) but was less accurate after six visits and in early
+maturers. Calibrated intervals covered \TwCovConf{} at nominal \SpecInterval{}, and the
+growth-spurt probability was well calibrated (slope \CircaSlope{}) and discriminated better than
+the equation (AUC \TwCircaAUC{} against \TwCircaAUCMoore{}).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -56,22 +58,30 @@ and youth sport uses it to group players by maturity (bio-banding) \cite{cumming
 to adjust training load, and to anticipate growth-related injuries that cluster around the
 adolescent growth spurt \cite{hall2025,oxendale2025}. In practice maturity is estimated from one
 measurement with a regression equation for maturity offset, the years from peak height velocity
-(PHV) \cite{mirwald2002,moore2015}. These equations regress towards the mean, are least accurate
-far from PHV \cite{koziel2018modified,malina2021soccer}, give no statement of uncertainty, and do
-not improve when the same athlete is measured again.
+(PHV) \cite{mirwald2002,moore2015}. Independent validations show that these equations are
+reasonable only for average-maturing children near PHV: they place PHV too late in early maturers
+and too early in late maturers, and an individual's predictions vary considerably from one
+measurement to the next \cite{koziel2018modified,malina2021soccer}. They also give no statement of
+uncertainty and cannot use repeated measurements.
 
-Growth-curve models such as SITAR \cite{cole2010sitar} describe each child's curve as a shifted and
-stretched version of a shared curve and estimate age at PHV well from long series, but they are
-usually fitted retrospectively to complete records. Programmes, by contrast, see a few
-measurements at a time and need an answer now.
+Growth-curve models such as SITAR \cite{cole2010sitar}, including a Bayesian implementation
+\cite{bsitar}, describe each child's curve as a shifted and stretched version of a shared curve and
+estimate age at PHV well from long series. They are fitted retrospectively to complete records,
+and with sparse, irregular sampling a large share of fits show convergence or boundary problems
+\cite{carvalho2025sitar}. Programmes, by contrast, see a few measurements at a time and need an
+answer at each visit. We use the term digital twin for an individual model of this kind, updated as
+data arrive and reporting its uncertainty; our literature search found no such model for
+adolescent growth.
 
-We call our approach a growth twin: a per-athlete model state that is (i) learned against a
-reference cohort, (ii) updated after every new measurement, (iii) reports calibrated uncertainty,
-(iv) forecasts the next measurement, and (v) feeds a decision, here whether the athlete is in the
-growth spurt. Our contributions are: a marginalised Bayesian SITAR-type twin with a timing prior
-whose spread grows with distance from PHV; cross-fold conformal calibration of its intervals; an
-out-of-sample, visit-by-visit evaluation on real longitudinal data against the equations used in
-practice; robustness to the measurement conditions of real programmes; and an external check.
+We call our approach a growth twin: a per-athlete model state that is learned against a reference
+cohort, updated after every new measurement, reports calibrated uncertainty, forecasts the next
+measurement, and feeds a decision (whether the athlete is in the growth spurt). Contributions:
+(i) a marginalised Bayesian SITAR-type twin that is exact for one to a few measurements, with a
+timing prior whose spread grows with distance from PHV; (ii) cross-fold conformal calibration of
+its intervals; (iii) an out-of-sample, visit-by-visit evaluation on real longitudinal data against
+the equations used in practice and a machine-learning baseline, with child-level confidence
+intervals; (iv) an analysis by maturity timing, the equations' known failure mode; and
+(v) robustness to the measurement conditions of real programmes and an external check.
 
 \section{Methods}
 
@@ -89,62 +99,78 @@ PHV is the age of the highest interior peak of the athlete's velocity curve.
 
 \emph{Distance-dependent timing prior.} The prior for $\beta_i$ is centred on the Moore estimate
 \cite{moore2015} with standard deviation $\sigma_\beta(1+\kappa\,|m_i|)$, where $m_i$ is the Moore
-maturity offset at the visit used for the prior and $\kappa$ is learned. This encodes the known
-loss of accuracy of the equations far from PHV \cite{koziel2018modified}.
+maturity offset at the visit used for the prior and $\kappa$ is learned, encoding the known loss of
+accuracy of the equations far from PHV \cite{koziel2018modified}.
 
 \subsection{The twin: reference cohort and sequential updating}
 The shared parameters are learned from a reference cohort's full records. Each reference child's
 prior is computed from one random season of its own record, as it would be at deployment, so the
-learned prior spread reflects real prior error. A new athlete's twin is then the posterior of its
-effects given the shared parameters and the measurements so far; each new visit redraws it.
-The shared curve is fitted at its posterior mode, as SITAR fits by maximum likelihood; the
-athlete's state remains fully Bayesian given it. One fold was refitted with full MCMC (NUTS) as a
-check (Section~\ref{sec:nuts}).
+learned prior spread reflects real prior error. A new athlete's twin is the posterior of its
+effects given the shared parameters and the measurements so far; each new visit redraws it. The
+shared curve is fitted at its posterior mode, as SITAR fits by maximum likelihood; the athlete's
+state remains fully Bayesian given it. One fold was refitted with full MCMC (NUTS) as a check.
 
 \subsection{Calibration and decision output}
-Raw posterior intervals are rescaled by cross-fold, split conformal calibration
+Raw posterior intervals are rescaled by cross-fold split conformal calibration
 \cite{lei2018conformal,angelopoulos2021gentle}: the score is the error in units of the athlete's
 posterior standard deviation, and for athletes in fold $k$ the scaling quantile is taken from the
-held-out athletes of the other folds of the same sex with the same number of visits, so no
-athlete calibrates its own interval. The same procedure calibrates the \SpecHorizon{}-month stature forecast. The decision
-output is the posterior probability that the athlete is within \SpecCircaWidth{}~year of PHV now.
+held-out athletes of the other folds of the same sex with the same number of visits, so no athlete
+calibrates its own interval. The same procedure calibrates the \SpecHorizon{}-month stature
+forecast. The decision output is the posterior probability that the athlete is within
+\SpecCircaWidth{}~year of PHV now.
 
 \subsection{Data}
 The Berkeley Child Guidance Study \cite{tuddenham1954}, distributed with the \texttt{sitar}
 package \cite{sitarpkg}, follows \TwChildren{} children born in 1928--29 with stature, stem
 (sitting) height and mass every six months from 8 to 21 years; it was not used to develop the
-Moore equations. The reference age at PHV of each child was obtained from the full record by a
+Moore equations. Each child's reference age at PHV was obtained from the full record by a
 Preece--Baines model 1 fit \cite{preece1978} checked against a smoothing spline. The Chard Growth
 Study (12 girls measured six-monthly from 8 to 16 years with age at menarche, no sitting height;
 also in \texttt{sitar}) served as an external check.
 
-\subsection{Evaluation}
-Children were split into \TwFolds{} folds by child, separately by sex. For each fold the twin's
-reference curve was learned from the other folds; each held-out child entered at a random
-measurement age between 8 and 15 years, and the twin was updated after each of up to
-\TwMaxVisits{} six-monthly visits. After each update we recorded age at PHV (against the
-Preece--Baines reference and against the same model given the child's whole record, which removes
-differences between curve families), interval coverage, the growth-spurt probability, and the
-forecast of the next measurement. Comparators used the same visits: Moore and, for boys, Mirwald,
-taken at the visit each places closest to PHV; and extrapolation of the last observed velocity for
-the forecast. Robustness was tested by degrading only the held-out children's data: yearly instead
-of six-monthly visits, added measurement error, and no sitting height (Moore's stature-only
-equation for boys). A leg-length extension, in which leg length shares each child's timing with an
+\subsection{Evaluation and statistical analysis}
+Children were split into \TwFolds{} folds by child, separately by sex. For each fold the reference
+curve was learned from the other folds; each held-out child entered at a random measurement age
+between 8 and 15 years and the twin was updated after each of up to \TwMaxVisits{} six-monthly
+visits. After each update we recorded age at PHV (against the Preece--Baines reference, against the
+same model given the child's whole record, which removes differences between curve families, and,
+as a sensitivity analysis, against the smoothing-spline reference), interval coverage, the
+growth-spurt probability, and the forecast of the next measurement.
+
+\emph{Comparators} used the same visits: Moore and, for boys, Mirwald, taken at the visit each
+places closest to PHV; extrapolation of the last observed velocity for the forecast; and a
+gradient-boosting regressor trained, within each fold, on sequences from the training children
+(features: visits seen, age and measurements at the latest visit, observed stature and
+sitting-height velocities, years observed, Moore estimate; target: the Preece--Baines reference)
+and given the same cross-fold conformal intervals.
+
+\emph{Inference.} Differences are reported with 95\,\% percentile intervals from \TwBootN{}
+bootstrap resamples of children, since a child contributes up to \TwMaxVisits{} correlated
+evaluations. Maturity timing was classified as early or late when the reference age at PHV lay more
+than \SpecTimingSD{}~SD from the mean of the same sex. The growth-spurt probability was assessed by
+AUC, Brier score and logistic calibration intercept and slope.
+
+\emph{Robustness} was tested by degrading only the held-out children's data: yearly instead of
+six-monthly visits, added measurement error, and no sitting height (Moore's stature-only equation
+for boys). A leg-length extension, in which leg length shares each child's timing with an
 individual leg-to-stature lag, was evaluated in the same way.
 
 \section{Results}
 
 \subsection{Accuracy as visits accumulate}
 Over \TwEvaluations{} evaluations the twin's mean absolute error in age at PHV was \TwMAE{}~years
-against \TwMooreMAE{} for Moore and \TwMirwaldMAE{} for Mirwald (Table~\ref{tab:visits},
-Fig.~\ref{fig:sequential}). It fell from \TwMAEFirst{} after the first visit, when it matched the equation, to
-\TwMAELast{} after \TwMaxVisits{}; the equation, which can only choose which single measurement to
-use, improved from \TwMooreFirst{} to \TwMooreLast{}. Against the twin's own full-record estimate the errors were
-\TwMAEFull{} and \TwMooreMAEFull{}~years, and the twin's bias fell from \TwBiasPB{} (against
-Preece--Baines) to \TwBiasFull{}~years, showing that the bias against the Preece--Baines reference
-is a difference between curve families. The twin was more accurate than Moore in \TwBandsBetter{}
-of \TwBands{} bands of distance from PHV (Table~\ref{tab:bands}); the exception was the band
-\TwWorstBand{}~PHV, in years (\TwWorstBandTwin{} against \TwWorstBandMoore{}~years).
+against \TwMooreMAE{} for Moore and \TwMirwaldMAE{} for Mirwald (Tables~\ref{tab:visits}
+and~\ref{tab:comparisons}, Fig.~\ref{fig:sequential}). At the first visit the twin and Moore did not
+differ (\TwDiffMooreFirst{}; 95\,\% CI \TwDiffMooreFirstCI{}); the twin's error then fell to
+\TwMAELast{} after \TwMaxVisits{} visits, while the equation, which can only choose which single
+measurement to use, improved from \TwMooreFirst{} to \TwMooreLast{}, so that the difference reached
+\TwDiffMooreLast{} (\TwDiffMooreLastCI{}). Overall the difference was \TwDiffMoore{}
+(\TwDiffMooreCI{}); against the full-information reference \TwDiffMooreFull{}
+(\TwDiffMooreFullCI{}). In boys the twin was not significantly more accurate than Mirwald
+(\TwDiffMirwald{}; \TwDiffMirwaldCI{}). The twin's bias was \TwBiasPB{}~years against
+Preece--Baines but \TwBiasFull{} against its own full-record estimate, so the former is a difference
+between curve families; against the smoothing-spline reference the errors were \SplineTwin{} for
+the twin and \SplineMoore{} for Moore.
 
 \begin{table*}[!t]
 \caption{Age at PHV by number of visits seen by the twin (real Berkeley data, held-out children).
@@ -155,6 +181,14 @@ intervals; mean calibrated width in years.}
 \input{../tables/twin_tab_visits.tex}
 \end{table*}
 
+\begin{table}[!t]
+\caption{Paired differences (twin minus comparator; negative favours the twin) with child-level
+bootstrap 95\,\% intervals.}
+\label{tab:comparisons}
+\centering
+\resizebox{\columnwidth}{!}{\input{../tables/twin_tab_comparisons.tex}}
+\end{table}
+
 \begin{figure*}[!t]
 \centering
 \IfFileExists{../figures/twin_fig_sequential.png}{\includegraphics[width=\textwidth]{twin_fig_sequential.png}}{\fbox{\PENDINGFIG}}
@@ -163,40 +197,57 @@ raw interval coverage, and six-month stature forecast error (twin and velocity e
 \label{fig:sequential}
 \end{figure*}
 
-\subsection{Calibrated uncertainty}
-Raw nominal \SpecInterval{} intervals covered \TwCovRaw{} of cases (mean width \TwWidthRaw{}~years);
-after conformal calibration they covered \TwCovConf{} (width \TwWidthConf{}). The learned timing
-prior widened by \TwSlope{} of its standard deviation per year of distance from PHV.
+\subsection{Early and late maturers}
+Table~\ref{tab:timing} shows where the gains arise. Moore's error was large and directional in
+early and late maturers (late estimates in early maturers, early estimates in late maturers), as
+reported in independent samples \cite{koziel2018modified}. The twin reduced the error by
+\TwEarlyDiffMoore{}~years (\TwEarlyDiffMooreCI{}) in the \TwEarlyChildren{} early maturers and by
+\TwLateDiffMoore{} (\TwLateDiffMooreCI{}) in the \TwLateChildren{} late maturers, while in the
+\TwAverageChildren{} average maturers the two did not differ significantly (\TwAverageDiffMoore{};
+\TwAverageDiffMooreCI{}). The twin's own bias in these groups was smaller than Moore's but not zero.
 
 \begin{table}[!t]
-\caption{By years from PHV at the latest visit (real data).}
-\label{tab:bands}
+\caption{Mean absolute error (mean bias) in years by maturity timing; early and late beyond
+\SpecTimingSD{}~SD of the sex-specific mean reference age at PHV.}
+\label{tab:timing}
 \centering
-\resizebox{\columnwidth}{!}{\input{../tables/twin_tab_bands.tex}}
+\resizebox{\columnwidth}{!}{\input{../tables/twin_tab_timing.tex}}
 \end{table}
 
-\subsection{Is the athlete in the growth spurt now?}
-\TwCircaPrev{} of evaluations were within \SpecCircaWidth{}~year of PHV. The twin's probability
-discriminated these with an AUC of \TwCircaAUC{}, against \TwCircaAUCMoore{} for the Moore offset.
-At a probability of one half the twin's sensitivity and specificity were \TwCircaSensTwin{} and
-\TwCircaSpecTwin{}, against \TwCircaSensMoore{} and \TwCircaSpecMoore{} for the usual rule of an
-offset within one year.
+\subsection{Calibrated uncertainty and the growth-spurt probability}
+Raw nominal \SpecInterval{} intervals covered \TwCovRaw{} of cases (mean width \TwWidthRaw{}~years);
+after conformal calibration they covered \TwCovConf{} (width \TwWidthConf{}), with coverage close to
+nominal for each sex and number of visits (Table~\ref{tab:visits}) but lower in late maturers
+(Table~\ref{tab:timing}). The learned timing prior widened by \TwSlope{} of its standard deviation
+per year of distance from PHV. \TwCircaPrev{} of evaluations were within \SpecCircaWidth{}~year of
+PHV; the twin's probability discriminated these with an AUC of \TwCircaAUC{} against
+\TwCircaAUCMoore{} for the Moore offset (difference \TwDiffAUC{}; \TwDiffAUCCI{}), and was well
+calibrated (intercept \CircaIntercept{}, slope \CircaSlope{}, Brier score \CircaBrier{}). At a
+probability of one half its sensitivity and specificity were \TwCircaSensTwin{} and
+\TwCircaSpecTwin{}, against \TwCircaSensMoore{} and \TwCircaSpecMoore{} for an offset within one year.
+
+\subsection{Machine-learning baseline}
+Gradient boosting trained on the reference children reached an error of \MlMAE{}~years, matching the
+twin overall (difference \TwDiffML{}; \TwDiffMLCI{}) and at early visits (first visit \TwDiffMLFirst{};
+\TwDiffMLFirstCI{}), with calibrated coverage of \MlCov{} at a similar width (\MlWidth{}~years) and a
+growth-spurt AUC of \MlAUC{} (difference from the twin \TwDiffMLAUC{}; \TwDiffMLAUCCI{}). The twin was
+more accurate after six visits (\TwDiffMLLast{}; \TwDiffMLLastCI{}) and in early maturers
+(\TwEarlyDiffML{}; \TwEarlyDiffMLCI{}), and against the spline reference (\SplineTwin{} against
+\SplineML{}); in average and late maturers the two did not differ significantly.
 
 \subsection{Forecasting the next measurement}
 The twin's \SpecHorizon{}-month forecast error was \TwForecastMAESame{}~cm against \TwNaiveMAE{} for
-extrapolating the last observed velocity on the same visits, so the twin forecasts about as well
-as the simplest practical rule while also quantifying its uncertainty: calibrated forecast
-intervals covered \TwForecastCovConf{} of measurements (raw \TwForecastCovRaw{}) with a width of
+extrapolating the last observed velocity on the same visits. Calibrated forecast intervals covered
+\TwForecastCovConf{} of measurements (raw \TwForecastCovRaw{}) with a width of
 \TwForecastWidthConf{}~cm.
 
 \subsection{Robustness and model variants}
-Table~\ref{tab:variants} shows the twin under the measurement conditions of real programmes and
-with the leg-length extension. With yearly visits the error was \TwYearlyMAE{}~years (Moore
-\TwYearlyMoore{}), lower than with six-monthly visits because the same number of yearly visits
-spans twice as much growth; with one centimetre of added measurement error \TwNoiseMAE{} (Moore
-\TwNoiseMoore{}); without sitting height \TwNosittingMAE{} (Moore stature-only \TwNosittingMoore{}).
-Calibrated coverage stayed at \TwYearlyCov{}, \TwNoiseCov{} and \TwNosittingCov{}. Adding leg length
-did not help: \TwLegSharedMAE{}~years with shared timing and \TwLegLagMAE{} with an individual lag,
+With yearly visits the error was \TwYearlyMAE{}~years (Moore \TwYearlyMoore{}), lower than with
+six-monthly visits because the same number of yearly visits spans twice as much growth; with one
+centimetre of added measurement error \TwNoiseMAE{} (Moore \TwNoiseMoore{}); without sitting height
+\TwNosittingMAE{} (Moore stature-only \TwNosittingMoore{}). Calibrated coverage stayed at
+\TwYearlyCov{}, \TwNoiseCov{} and \TwNosittingCov{} (Table~\ref{tab:variants}). Adding leg length did
+not help: \TwLegSharedMAE{}~years with shared timing and \TwLegLagMAE{} with an individual lag,
 against \TwMainMAE{} for stature alone.
 
 \begin{table}[!t]
@@ -206,7 +257,7 @@ against \TwMainMAE{} for stature alone.
 \resizebox{\columnwidth}{!}{\input{../tables/twin_tab_variants.tex}}
 \end{table}
 
-\subsection{Full MCMC check}\label{sec:nuts}
+\subsection{Full MCMC check}
 Refitting the shared curve of one fold by NUTS gave an error of \TwNutsMAE{}~years and raw coverage
 \TwNutsCov{}, against \TwMapFoldMAE{} and \TwMapFoldCov{} with the posterior mode on the same
 children (largest R-hat \TwNutsRhat{}, smallest bulk effective sample size \TwNutsESS{}).
@@ -215,38 +266,47 @@ children (largest R-hat \TwNutsRhat{}, smallest bulk effective sample size \TwNu
 Trained on all Berkeley girls and applied visit by visit to the \ChGirls{} Chard girls, the twin's
 final estimate differed from the full-record age at PHV by \ChTwinMAE{}~years against \ChMooreMAE{}
 for Moore (\ChRef{} girls with a full-record reference). In the \ChMen{} girls with observed
-menarche, the twin's age at PHV correlated \ChCorrTwin{} with age at menarche (Moore \ChCorrMoore{}),
-and menarche followed the twin's PHV by \ChLagMean{}~years (SD \ChLagSD{}; Moore \ChMooreLagSD{}),
-consistent with the known interval between the two.
+menarche, the twin's age at PHV correlated \ChCorrTwin{} with age at menarche (Moore
+\ChCorrMoore{}), and menarche followed the twin's PHV by \ChLagMean{}~years (SD \ChLagSD{}; Moore
+\ChMooreLagSD{}). These samples are too small for inference and are reported as supporting evidence.
 
 \section{Discussion}
-A growth twin that learns from each new measurement estimates maturity timing substantially better
-than the equations used in practice, and its advantage grows with every visit, which is how
-programmes actually collect data. Its intervals, once conformally calibrated, mean what they say,
-and its growth-spurt probability is a better basis for decisions such as bio-banding or
-load-management alerts than an equation's offset. The twin is not better everywhere: one to three
-years before PHV, where a season of steady childhood growth says little about when the spurt will
-come, the equation was as good or better, and the calibrated interval is correspondingly wide.
+The equations used in youth sport are adequate for average maturers near PHV and fail where it
+matters most: in early and late maturers, the children bio-banding is designed for and in whom the
+timing of growth-related injury risk is least predictable. The growth twin's advantage is
+concentrated exactly there, and it grows as visits accumulate, which is how programmes collect
+data. It also does what an equation cannot: it states its uncertainty, and once conformally
+calibrated its intervals and its growth-spurt probability mean what they say.
 
-Two negative results are informative. The six-month forecast was only on a par with velocity
-extrapolation, so the twin's value lies in timing and uncertainty, not short-term prediction of
-stature. And leg length, despite the known earlier peak of the legs, did not improve the estimate:
-the lag between leg and stature growth varies between children enough to offset the information
-it carries.
+The comparison with gradient boosting sharpens the claim. A flexible model trained on the reference
+cohort's labels was as accurate on average, so the twin's value is not raw accuracy from few
+visits. Its advantages are structural: it is learned from growth records rather than from
+reference ages at PHV, so its estimate does not inherit one reference definition (it led against
+the spline reference); it is coherent across visits and keeps improving where the boosted model
+plateaued; it handles early maturers better; and it yields a full growth state, with forecasts and
+an interpretable timing posterior, rather than a single number.
 
-\emph{Limitations.} The development data come from a historical North American cohort and the
-external check is small. The twin has not yet been tested in athletes or in Indian children, where
-growth timing differs; the code accepts such data directly (Data Availability). The shared curve
-was fitted at its posterior mode, with full MCMC checked on one fold.
+Several findings limit the claims. The twin gave no gain at the first visit and was not
+significantly better than Mirwald in boys. Calibrated coverage was lower in late maturers. Its
+six-month forecast was only on a par with velocity extrapolation, and leg length, despite the
+known earlier peak of the legs, did not improve the estimate because the leg-to-stature lag varies
+between children.
+
+\emph{Limitations.} The development data come from a historical North American cohort; the twin has
+not been tested in athletes or in Indian children, where growth timing differs, and the external
+check is small. We did not benchmark against frequentist or Bayesian SITAR fitted to the same sparse
+visits \cite{bsitar,carvalho2025sitar}, nor against the maturity-ratio equation of Fransen et al.;
+the shared curve was fitted at its posterior mode, with full MCMC checked on one fold.
 
 \section{Conclusion}
-A sequentially updated, uncertainty-calibrated growth twin can replace one-off maturity equations
-in youth sport programmes: it is more accurate, learns from each visit, says how sure it is, and
-answers the question practitioners ask, whether an athlete is in the growth spurt now.
+A sequentially updated, uncertainty-calibrated growth twin can replace one-off maturity equations in
+youth sport programmes where it matters most: in early and late maturers, and as measurements
+accumulate. It states how sure it is and answers the question practitioners ask, whether an athlete
+is in the growth spurt now.
 
 \section*{Data and Code Availability}
-Berkeley and Chard data: \texttt{sitar} R package (CRAN). Code, configuration and run records are
-in the project repository; every number in this paper is generated from a run and traceable to its
+Berkeley and Chard data: \texttt{sitar} R package (CRAN). Code, configuration and run records are in
+the project repository; every number in this paper is generated from a run and traceable to its
 configuration, seed and commit. A template for applying the twin to a programme's own records is
 included.
 

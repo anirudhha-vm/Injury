@@ -34,11 +34,15 @@ def _latest(kind: str) -> Path | None:
 
 
 def main(tectonic: Path | None = None) -> None:
-    configs = {"sequential": load_config("external/sequential.yaml")}
+    configs = {
+        "sequential": load_config("external/sequential.yaml"),
+        "analysis": load_config("external/twin_analysis.yaml"),
+    }
     values, tables, runs = twin_paper.build(
         repo_root() / "outputs" / "real_twin_sequential",
         _latest("real_twin_external_chard"),
         configs,
+        analysis=_latest("real_twin_analysis"),
     )
     paper = repo_root() / "paper"
     (paper / "tables").mkdir(parents=True, exist_ok=True)

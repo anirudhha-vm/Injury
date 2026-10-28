@@ -325,7 +325,10 @@ def chard_values(run: Path | None, values: Values) -> None:
 
 
 def build(
-    root: Path, chard: Path | None, configs: Mapping[str, Any]
+    root: Path,
+    chard: Path | None,
+    configs: Mapping[str, Any],
+    analysis: Path | None = None,
 ) -> tuple[Values, dict[str, str], dict[str, Path]]:
     """All macros and tables. ``root``: outputs/real_twin_sequential."""
     values = Values()
@@ -352,4 +355,128 @@ def build(
     }
     nuts_values(runs, values)
     chard_values(chard, values)
+    tables.update(analysis_values(analysis, values))
+    timing_sd = float(configs.get("analysis", {}).get("timing_group_width_sd", float("nan")))
+    values.put("SpecTimingSD", _number(timing_sd, 0), "configs/external/twin_analysis.yaml")
     return values, tables, runs
+
+
+def _signed(value: float, digits: int = 2) -> str:
+    return _number(float(value), digits)
+
+
+def analysis_values(run: Path | None, values: Values) -> dict[str, str]:
+    """Intervals, maturity timing, ML baseline, calibration and reference sensitivity."""
+    pairs = {
+        ("twin_minus_moore_mae", "all"): "TwDiffMoore",
+        ("twin_minus_moore_mae", "visit 1"): "TwDiffMooreFirst",
+        ("twin_minus_moore_mae", "visit 6"): "TwDiffMooreLast",
+        ("twin_minus_moore_mae_full", "all"): "TwDiffMooreFull",
+        ("twin_minus_mirwald_mae", "boys"): "TwDiffMirwald",
+        ("twin_minus_moore_circa_auc", "all"): "TwDiffAUC",
+        ("twin_minus_ml_mae", "all"): "TwDiffML",
+        ("twin_minus_ml_mae", "visit 1"): "TwDiffMLFirst",
+        ("twin_minus_ml_mae", "visit 6"): "TwDiffMLLast",
+        ("twin_minus_ml_circa_auc", "all"): "TwDiffMLAUC",
+        ("twin_minus_moore_mae", "early maturers"): "TwEarlyDiffMoore",
+        ("twin_minus_ml_mae", "early maturers"): "TwEarlyDiffML",
+        ("twin_minus_moore_mae", "average maturers"): "TwAverageDiffMoore",
+        ("twin_minus_ml_mae", "average maturers"): "TwAverageDiffML",
+        ("twin_minus_moore_mae", "late maturers"): "TwLateDiffMoore",
+        ("twin_minus_ml_mae", "late maturers"): "TwLateDiffML",
+    }
+    scalars = [
+        "TwEarlyChildren",
+        "TwAverageChildren",
+        "TwLateChildren",
+        "MlMAE",
+        "MlCov",
+        "MlWidth",
+        "MlAUC",
+        "CircaSlope",
+        "CircaIntercept",
+        "CircaBrier",
+        "SplineTwin",
+        "SplineMoore",
+        "SplineML",
+        "TwBootN",
+        "TwTimingSD",
+    ]
+    if run is None:
+        values.pending(*pairs.values(), *[f"{n}CI" for n in pairs.values()], *scalars)
+        return {"twin_tab_comparisons.tex": PENDING, "twin_tab_timing.tex": PENDING}
+    rid = _rid(run)
+    values.runs["twin_analysis"] = rid
+    intervals = pd.read_csv(run / "intervals.csv")
+    record = json.loads((run / "run.json").read_text(encoding="utf-8"))
+    rows = []
+    for (comparison, subset), name in pairs.items():
+        match = intervals[(intervals["comparison"] == comparison) & (intervals["subset"] == subset)]
+        if match.empty:
+            values.pending(name, f"{name}CI")
+            continue
+        r = match.iloc[0]
+        digits = 3 if "auc" in comparison else 2
+        values.put(name, _signed(r["estimate"], digits), rid)
+        values.put(
+            f"{name}CI", f"{_signed(r['ci_low'], digits)} to {_signed(r['ci_high'], digits)}", rid
+        )
+        label = {
+            "twin_minus_moore_mae": "Twin $-$ Moore, MAE",
+            "twin_minus_moore_mae_full": "Twin $-$ Moore, MAE (full-information ref.)",
+            "twin_minus_mirwald_mae": "Twin $-$ Mirwald, MAE",
+            "twin_minus_moore_circa_auc": "Twin $-$ Moore, spurt AUC",
+            "twin_minus_ml_mae": "Twin $-$ boosting, MAE",
+            "twin_minus_ml_circa_auc": "Twin $-$ boosting, spurt AUC",
+        }[comparison]
+        excludes = "yes" if (r["ci_low"] > 0 or r["ci_high"] < 0) else "no"
+        rows.append(
+            [
+                label,
+                subset,
+                _signed(r["estimate"], digits),
+                f"{_signed(r['ci_low'], digits)} to {_signed(r['ci_high'], digits)}",
+                excludes,
+            ]
+        )
+    values.number("TwBootN", int(intervals["n_resamples"].max()), rid)
+    ml, circa, spline = (
+        record["ml_baseline"],
+        record["circa_calibration"],
+        record["reference_sensitivity"],
+    )
+    values.number("MlMAE", ml["ml_mae"], rid)
+    values.put("MlCov", percent(ml["ml_conf_coverage"]), rid)
+    values.number("MlWidth", ml["ml_conf_width"], rid)
+    values.number("MlAUC", circa["auc_ml"], rid)
+    values.number("CircaSlope", circa["calibration_slope"], rid)
+    values.number("CircaIntercept", circa["calibration_intercept"], rid)
+    values.number("CircaBrier", circa["brier"], rid, 3)
+    values.number("SplineTwin", spline["twin_mae_vs_spline"], rid)
+    values.number("SplineMoore", spline["moore_mae_vs_spline"], rid)
+    values.number("SplineML", spline["ml_mae_vs_spline"], rid)
+    comparisons = tabular(
+        "llrrc", ["Comparison", "Subset", "Difference", "95\\% CI", "Excludes 0"], rows
+    )
+
+    timing = pd.read_csv(run / "timing_groups.csv")
+    timing_rows = []
+    for _, r in timing.iterrows():
+        group = str(r["timing"])
+        values.number(f"Tw{group.capitalize()}Children", int(r["n_children"]), rid)
+        timing_rows.append(
+            [
+                group.capitalize(),
+                _number(int(r["n_children"]), 0),
+                f"{_number(float(r['twin_mae']), 2)} ({_signed(r['twin_bias'])})",
+                f"{_number(float(r['ml_mae']), 2)} ({_signed(r['ml_bias'])})",
+                f"{_number(float(r['moore_mae']), 2)} ({_signed(r['moore_bias'])})",
+                percent(float(r["twin_conf_coverage"])),
+            ]
+        )
+    timing_table = tabular(
+        "lrrrrr",
+        ["Maturity timing", "Children", "Twin", "Boosting", "Moore", "Twin conf. cov."],
+        timing_rows,
+    )
+    return {"twin_tab_comparisons.tex": comparisons, "twin_tab_timing.tex": timing_table}
