@@ -1023,3 +1023,27 @@ still ranges more widely (Table II), because distance is not known at prediction
 
 **R-021 · First full-MCMC check crashed** (eight chains at once; sampler processes lost their
 pipes, probably memory). Restarted one sex at a time with 200 + 200 draws.
+
+---
+
+## Q1 strengthening (2026-10-28)
+
+**R-022 · Literature review (2026-10-28).** No published sequentially updated, calibrated
+maturity estimator validated out of sample; SITAR (frequentist and Bayesian) is fitted
+retrospectively and is fragile on sparse data (Carvalho, SSRN preprint 2025: 40-45% of fits
+warned under sparse sampling); maturity-offset equations are biased late in early maturers and
+early in late maturers (Koziel & Malina 2018); no paediatric growth digital twin found. The
+Fransen maturity-ratio equation was not implemented (coefficients not verifiable here).
+
+**D-139 · Analyses added without refitting** (`scripts/real_twin_analysis.py`, run
+`twinanalysis-b1a3d63d2f85`): child-level bootstrap intervals; maturity-timing groups; calibration
+of the growth-spurt probability; spline-reference sensitivity; a gradient-boosting baseline on
+the same visits and folds with the same conformal intervals.
+
+**R-023 · Findings.** The twin beats Moore overall and from the second visit, not at the first;
+it is not significantly better than Mirwald in boys. A gradient-boosting model trained on the
+reference cohort's labels matches the twin overall and for visits 1-5; the twin is better at the
+sixth visit. The twin's advantage concentrates in early and late maturers (vs Moore in both, vs
+gradient boosting in early maturers); for average maturers the three are equivalent. The
+growth-spurt probability is well calibrated. Against the spline reference the twin leads both.
+The paper's claims are revised accordingly.

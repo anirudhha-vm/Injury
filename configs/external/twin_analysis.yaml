@@ -1,0 +1,12 @@
+# Secondary analyses of the sequential twin (M11; scripts/real_twin_analysis.py).
+bootstrap:
+  n_resamples: 2000
+  level: 0.95                # child-level (cluster) bootstrap
+  seed: 20261028
+timing_group_width_sd: 1.0   # early / late maturers: reference APHV beyond +/- 1 SD of the sex mean
+ml_baseline:                 # gradient boosting on the same visits and folds (ASSUMPTION: settings)
+  entries_per_child: 5       # random entry ages per training child, to build training sequences
+  max_iter: 300
+  learning_rate: 0.05
+  min_samples_leaf: 20
+  max_depth: 3

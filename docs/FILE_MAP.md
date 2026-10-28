@@ -48,6 +48,7 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `external/berkeley.yaml` | Source (URL, checksum), reference-APHV rules and season-window design for the real Berkeley growth study | ✅ |
 | `external/runners.yaml` | Source files and checksums of the real runners' injury dataset, and its evaluation settings | ✅ |
 | `external/sequential.yaml` | M11 sequential twin evaluation: folds, ages, visits, horizon, interval level, growth-spurt window, model overrides | ✅ |
+| `external/twin_analysis.yaml` | Bootstrap, maturity-timing and ML-baseline settings | ✅ |
 | `sim/cohort.yaml` | Every parameter of the synthetic cohort: size, seed, growth curves, visits, measurement error, movement, exposure, injury hazards (all flagged as assumptions except the cited mean age at PHV) | ✅ |
 | `sim/calibration.yaml` | Target incidence for calibrating the synthetic injury process (cited) | ✅ |
 | `sim/validation.yaml` | Synthetic markerless-vs-mocap study: groups, body scale, error model, calibration target (cited), replicates | ✅ |
@@ -123,6 +124,8 @@ Status: ✅ exists · 🔲 planned (milestone in brackets). Last updated: 2026-1
 | `external/berkeley.py` | Loads the Berkeley Child Guidance Study (real), draws one-season windows per child, computes Moore/Mirwald from the same windows | ✅ |
 | `external/runners.py` | Loads the real runners' injury dataset (bounded load ratios, week suffixes), model builders, the three split schemes (runner-grouped, temporal, row-level leak demonstration) and held-out prediction | ✅ |
 | `external/sequential.py` | M11: fold assignment, reference-cohort training data, entry sequences and scenarios, visit-by-visit twin scoring, conformal calibration, summaries | ✅ |
+| `external/twin_stats.py` | Child-level bootstrap intervals, maturity-timing groups, growth-spurt probability calibration | ✅ |
+| `external/ml_baseline.py` | Gradient-boosting baseline for age at PHV on the same visits and folds as the twin; conformal half-widths | ✅ |
 | `eval/calibration.py` | Calibration intercept and slope, ICI, ECE, binned calibration curve | ✅ |
 | `eval/dca.py` | Decision-curve analysis: net benefit with treat-all and treat-none references | ✅ |
 | `eval/bootstrap.py` | Athlete-level cluster bootstrap for metrics and for paired differences between models | ✅ |
@@ -160,6 +163,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `real_risk_runners.py` | Risk models on real injury outcomes (runners) under three split schemes; athlete-bootstrap intervals, paired differences, calibration, leakage inflation; to `outputs/real_risk_runners/<run_id>/` | ✅ |
 | `real_twin_sequential.py` | M11: sequential growth twin on Berkeley; folds by child, MAP or NUTS reference curve, visit-by-visit updating, forecasts, conformal intervals, growth-spurt probability, robustness scenarios, leg variants | ✅ |
 | `real_twin_external_chard.py` | M11: Berkeley-trained twin applied to the Chard Growth Study girls; vs own-record APHV and age at menarche | ✅ |
+| `real_twin_analysis.py` | Secondary analyses of the primary twin run: intervals, maturity timing, calibration, reference sensitivity, ML baseline | ✅ |
 | `calibrate_simulation.py` | Finds the growth-related hazard intercept that gives the published incidence, exactly from the true hazards; writes `outputs/calibration/<run_id>/` | ✅ |
 | `sim_study_validation.py` | Synthetic validity study: calibrates the markerless error, simulates the planned 36-participant study, repeats it for precision; to `outputs/sim_study_validation/<run_id>/` | ✅ |
 | `evaluate.py` | Out-of-fold evaluation of baselines, the confirmatory model and tabular hazards: predictions, performance with intervals, differences, decision curve, calibration, subgroups, SHAP importance, what-if (`make evaluate`) | ✅ |
@@ -215,6 +219,7 @@ Sub-packages marked 🔲 hold only an `__init__.py` whose docstring states their
 | `test_results_draft.py` | Untagged numbers in the generated results; synthetic sections not labelled; missing runs silently dropped | ✅ |
 | `test_ieee_paper.py` | IEEE values not traceable to their run; pending runs not marked; macros used in `main.tex` that the generator never defines | ✅ |
 | `test_twin_paper.py` | Twin runs misclassified; results not pending without runs; manuscript macros not generated | ✅ |
+| `test_twin_stats.py` | Bootstrap not resampling children; timing groups mixing sexes; ML baseline training on held-out children or using future visits | ✅ |
 | `test_sequential_twin.py` | Folds overlapping; held-out children in training; twin looking ahead; conformal intervals self-calibrating or missing their level; scenarios changing more than the held-out data | ✅ |
 | `cohort_settings.py` | Test helper: the realistic cohort config plus `sim/test_signal.yaml` | ✅ |
 | `test_eval_metrics.py` | Wrong metric arithmetic (hand-worked and against scikit-learn); miscalibration not detected; row-level instead of athlete-level bootstrap; silently dropped subgroups | ✅ |
